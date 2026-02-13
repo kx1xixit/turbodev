@@ -1,14 +1,3 @@
-// Name: My TurboWarp Extension
-// ID: myTurboWarpExtension
-// Description: A custom extension for TurboWarp
-// By: Your Name
-// License: KBEC-1.0
-
-// Version: 1.0.0
-
-'use strict';
-
-// ===== 01-core.js =====
 const vm = Scratch.vm;
 const runtime = vm.runtime;
 
