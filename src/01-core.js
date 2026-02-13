@@ -796,11 +796,11 @@ class TurboDevExtension {
 
   getInfo() {
     return {
-      id: 'turbodev',
+      id: 'kxTurboDev',
       name: 'TurboDev',
-      color1: '#333333',
-      color2: '#1e1e1e',
-      color3: '#000000',
+      color1: '#3498db',
+      color2: '#2872a3',
+      color3: '#10496f',
       blocks: [
         {
           opcode: 'showTerminal',
