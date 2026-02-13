@@ -1218,25 +1218,22 @@ class TurboDevExtension {
       }
     });
 
-      this.container.addEventListener('click', e => {
-        if (this.isMinimized) return;
-        this.container.style.zIndex = '99999';
+    this.container.addEventListener('click', e => {
+      if (this.isMinimized) return;
+      this.container.style.zIndex = '99999';
 
-        if (
-          this.settingsPanel.classList.contains('open') &&
-          this.settingsPanel.contains(e.target)
-        ) {
-          return;
-        }
+      if (this.settingsPanel.classList.contains('open') && this.settingsPanel.contains(e.target)) {
+        return;
+      }
 
-        // Only focus input if in normal mode
-        if (!this.isPerfMode) {
-          const sel = window.getSelection();
-          if (sel.toString().length === 0) {
-            this.inputField.focus();
-          }
+      // Only focus input if in normal mode
+      if (!this.isPerfMode) {
+        const sel = window.getSelection();
+        if (sel.toString().length === 0) {
+          this.inputField.focus();
         }
-      });
+      }
+    });
   }
 
   _applySystemSettings() {
@@ -1246,7 +1243,8 @@ class TurboDevExtension {
     } else {
       if (this.container) this.container.style.opacity = this.systemSettings.opacity;
     }
-    if (this.outputContainer) this.outputContainer.style.fontSize = `${this.systemSettings.fontSize}px`;
+    if (this.outputContainer)
+      this.outputContainer.style.fontSize = `${this.systemSettings.fontSize}px`;
     if (this.inputField) this.inputField.style.fontSize = `${this.systemSettings.fontSize}px`;
   }
 
@@ -2122,20 +2120,14 @@ class TurboDevExtension {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
-    safeText = safeText.replace(
-      /@c\s*(#[0-9A-Fa-f]{3,6})\s*:(.*?)@c/g,
-      (match, color, content) => {
-        return `<span style="color: ${color}">${content}</span>`;
-      }
-    );
+    safeText = safeText.replace(/@c\s*(#[0-9A-Fa-f]{3,6})\s*:(.*?)@c/g, (match, color, content) => {
+      return `<span style="color: ${color}">${content}</span>`;
+    });
 
-    safeText = safeText.replace(
-      /@h\s*(#[0-9A-Fa-f]{3,6})\s*:(.*?)@h/g,
-      (match, color, content) => {
-        // Removed border-radius as requested
-        return `<span style="background-color: ${color}; color: #fff; padding: 0 4px; border-radius: 0;">${content}</span>`;
-      }
-    );
+    safeText = safeText.replace(/@h\s*(#[0-9A-Fa-f]{3,6})\s*:(.*?)@h/g, (match, color, content) => {
+      // Removed border-radius as requested
+      return `<span style="background-color: ${color}; color: #fff; padding: 0 4px; border-radius: 0;">${content}</span>`;
+    });
 
     safeText = safeText.replace(/@b:(.*?)@b/g, '<strong>$1</strong>');
     safeText = safeText.replace(/@i:(.*?)@i/g, '<em>$1</em>');
