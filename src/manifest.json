@@ -1,8 +1,8 @@
 {
-  "name": "My TurboWarp Extension",
-  "id": "myTurboWarpExtension",
-  "version": "1.0.0",
-  "description": "A custom extension for TurboWarp",
-  "author": "Your Name",
+  "name": "TurboDev",
+  "id": "kxTurboDev",
+  "version": "1.0.0-beta",
+  "description": "The successor to TurboWarp's built=in console.",
+  "author": "@kx1xixit",
   "license": "KBEC-1.0"
 }
