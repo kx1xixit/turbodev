@@ -2,66 +2,69 @@ const vm = Scratch.vm;
 const runtime = vm.runtime;
 
 // --- Singleton & Cleanup ---
-if (window.__TurboDev) {
+// Check for existing instance in runtime or window to prevent duplicates
+// Using 'ext_kxTurboDev' to match the ID and standard naming convention
+if (runtime.ext_kxTurboDev) {
   try {
-    window.__TurboDev.dispose();
+    runtime.ext_kxTurboDev.dispose();
   } catch (e) {
     console.warn('TurboDev: Failed to dispose previous instance', e);
   }
 }
 
 // --- UI STYLES ---
+// Namespace: ext_kxTurboDev-...
 const STYLES = `
       :root {
-          --tw-term-bg: rgba(15, 15, 15, 0.92);
-          --tw-term-text: #e4e4e4;
-          --tw-term-accent: #3498db;
-          --tw-term-border: rgba(255, 255, 255, 0.1);
-          --tw-term-header: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
-          --tw-term-input-bg: rgba(0, 0, 0, 0.25);
-          --tw-term-font: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+          --ext_kxTurboDev-term-bg: rgba(15, 15, 15, 0.92);
+          --ext_kxTurboDev-term-text: #e4e4e4;
+          --ext_kxTurboDev-term-accent: #3498db;
+          --ext_kxTurboDev-term-border: rgba(255, 255, 255, 0.1);
+          --ext_kxTurboDev-term-header: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+          --ext_kxTurboDev-term-input-bg: rgba(0, 0, 0, 0.25);
+          --ext_kxTurboDev-term-font: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
       }
   
       /* Themes */
-      .tw-theme-matrix {
-          --tw-term-bg: #0d0d0d;
-          --tw-term-text: #00ff41;
-          --tw-term-accent: #008f11;
-          --tw-term-border: #003b00;
-          --tw-term-header: #0a0a0a;
-          --tw-term-input-bg: #000000;
-          --tw-term-font: 'Courier New', monospace;
+      .ext_kxTurboDev-theme-matrix {
+          --ext_kxTurboDev-term-bg: #0d0d0d;
+          --ext_kxTurboDev-term-text: #00ff41;
+          --ext_kxTurboDev-term-accent: #008f11;
+          --ext_kxTurboDev-term-border: #003b00;
+          --ext_kxTurboDev-term-header: #0a0a0a;
+          --ext_kxTurboDev-term-input-bg: #000000;
+          --ext_kxTurboDev-term-font: 'Courier New', monospace;
       }
-      .tw-theme-ocean {
-          --tw-term-bg: rgba(15, 23, 42, 0.95);
-          --tw-term-text: #94a3b8;
-          --tw-term-accent: #38bdf8;
-          --tw-term-border: rgba(56, 189, 248, 0.2);
-          --tw-term-header: rgba(30, 41, 59, 0.8);
-          --tw-term-input-bg: rgba(15, 23, 42, 0.5);
+      .ext_kxTurboDev-theme-ocean {
+          --ext_kxTurboDev-term-bg: rgba(15, 23, 42, 0.95);
+          --ext_kxTurboDev-term-text: #94a3b8;
+          --ext_kxTurboDev-term-accent: #38bdf8;
+          --ext_kxTurboDev-term-border: rgba(56, 189, 248, 0.2);
+          --ext_kxTurboDev-term-header: rgba(30, 41, 59, 0.8);
+          --ext_kxTurboDev-term-input-bg: rgba(15, 23, 42, 0.5);
       }
-      .tw-theme-retro {
-          --tw-term-bg: #1a1a1a;
-          --tw-term-text: #ffb000;
-          --tw-term-accent: #ff9500;
-          --tw-term-border: #594d00;
-          --tw-term-header: #242424;
-          --tw-term-input-bg: #111;
+      .ext_kxTurboDev-theme-retro {
+          --ext_kxTurboDev-term-bg: #1a1a1a;
+          --ext_kxTurboDev-term-text: #ffb000;
+          --ext_kxTurboDev-term-accent: #ff9500;
+          --ext_kxTurboDev-term-border: #594d00;
+          --ext_kxTurboDev-term-header: #242424;
+          --ext_kxTurboDev-term-input-bg: #111;
       }
   
       /* Animation Keyframes */
-      @keyframes twTermSlideIn {
+      @keyframes ext_kxTurboDevTermSlideIn {
           0% { opacity: 0; transform: translateY(10px) scale(0.98); }
           100% { opacity: 1; transform: translateY(0) scale(1); }
       }
       
-      @keyframes twShake {
+      @keyframes ext_kxTurboDevShake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
           75% { transform: translateX(5px); }
       }
   
-      .tw-terminal-wrapper {
+      .ext_kxTurboDev-terminal-wrapper {
           position: absolute;
           top: 40px;
           left: 40px;
@@ -70,46 +73,46 @@ const STYLES = `
           min-width: 320px;
           min-height: 200px;
           
-          background: var(--tw-term-bg);
+          background: var(--ext_kxTurboDev-term-bg);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
           
-          border: 1px solid var(--tw-term-border);
+          border: 1px solid var(--ext_kxTurboDev-term-border);
           border-radius: 12px;
           box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 
                       0 0 0 1px rgba(255,255,255,0.02) inset;
           
           display: flex;
           flex-direction: column;
-          font-family: var(--tw-term-font);
+          font-family: var(--ext_kxTurboDev-term-font);
           z-index: 9999;
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
           font-size: 13px;
           
           resize: both;
           overflow: hidden;
           
-          animation: twTermSlideIn 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+          animation: ext_kxTurboDevTermSlideIn 0.25s cubic-bezier(0.19, 1, 0.22, 1);
           transition: opacity 0.2s, background-color 0.2s, height 0.2s; 
       }
   
       /* Minimized State */
-      .tw-terminal-wrapper.tw-minimized {
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized {
           height: 40px !important;
           min-height: 40px !important;
           resize: none !important;
           overflow: hidden !important;
       }
-      .tw-terminal-wrapper.tw-minimized .tw-terminal-body,
-      .tw-terminal-wrapper.tw-minimized .tw-terminal-input-area,
-      .tw-terminal-wrapper.tw-minimized .tw-settings-panel,
-      .tw-terminal-wrapper.tw-minimized .tw-scroll-btn,
-      .tw-terminal-wrapper.tw-minimized .tw-performance-panel {
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-terminal-body,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-terminal-input-area,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-settings-panel,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-scroll-btn,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-performance-panel {
           display: none !important;
       }
       
       /* CLI Mode: Opaque, No Borders (Positioning handled by JS) */
-      .tw-terminal-wrapper.tw-cli-mode {
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode {
           border-radius: 0 !important;
           border: none !important;
           background: #050505 !important; /* Solid Black */
@@ -120,14 +123,14 @@ const STYLES = `
       }
       
       /* Hide Close/Minimize/Clear Button in CLI Mode */
-      .tw-terminal-wrapper.tw-cli-mode .tw-control-btn.close,
-      .tw-terminal-wrapper.tw-cli-mode .tw-control-btn.minimize,
-      .tw-terminal-wrapper.tw-cli-mode .tw-control-btn.clear {
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode .ext_kxTurboDev-control-btn.close,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode .ext_kxTurboDev-control-btn.minimize,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode .ext_kxTurboDev-control-btn.clear {
           display: none;
       }
   
       /* Resize handle corner hint */
-      .tw-terminal-wrapper::after {
+      .ext_kxTurboDev-terminal-wrapper::after {
           content: '';
           position: absolute;
           bottom: 4px;
@@ -135,15 +138,15 @@ const STYLES = `
           width: 8px;
           height: 8px;
           pointer-events: none;
-          background: radial-gradient(circle at center, var(--tw-term-text) 1px, transparent 1px);
+          background: radial-gradient(circle at center, var(--ext_kxTurboDev-term-text) 1px, transparent 1px);
           background-size: 4px 4px;
           opacity: 0.3;
       }
-      .tw-terminal-wrapper.tw-cli-mode::after,
-      .tw-terminal-wrapper.tw-minimized::after { display: none; }
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode::after,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized::after { display: none; }
   
-      .tw-terminal-header {
-          background: var(--tw-term-header);
+      .ext_kxTurboDev-terminal-header {
+          background: var(--ext_kxTurboDev-term-header);
           padding: 0 12px;
           height: 40px;
           display: flex;
@@ -151,17 +154,17 @@ const STYLES = `
           align-items: center;
           cursor: grab;
           user-select: none;
-          border-bottom: 1px solid var(--tw-term-border);
+          border-bottom: 1px solid var(--ext_kxTurboDev-term-border);
           box-sizing: border-box;
           flex-shrink: 0;
       }
   
-      .tw-terminal-header:active { cursor: grabbing; }
+      .ext_kxTurboDev-terminal-header:active { cursor: grabbing; }
   
-      .tw-terminal-title {
+      .ext_kxTurboDev-terminal-title {
           font-weight: 600;
           font-size: 13px;
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
           display: flex;
           align-items: center;
           gap: 10px;
@@ -169,23 +172,23 @@ const STYLES = `
       }
   
       /* Status Dot */
-      .tw-terminal-status {
+      .ext_kxTurboDev-terminal-status {
           width: 8px;
           height: 8px;
-          background-color: var(--tw-term-accent);
+          background-color: var(--ext_kxTurboDev-term-accent);
           border-radius: 50%;
-          box-shadow: 0 0 8px var(--tw-term-accent);
+          box-shadow: 0 0 8px var(--ext_kxTurboDev-term-accent);
           flex-shrink: 0;
           margin-top: 1px; /* Micro-adjustment for visual center */
       }
   
-      .tw-terminal-controls {
+      .ext_kxTurboDev-terminal-controls {
           display: flex;
           gap: 4px;
           align-items: center;
       }
   
-      .tw-control-btn {
+      .ext_kxTurboDev-control-btn {
           width: 28px;
           height: 28px;
           border-radius: 6px;
@@ -196,31 +199,31 @@ const STYLES = `
           align-items: center;
           justify-content: center;
           transition: all 0.2s ease;
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
           opacity: 0.7;
       }
   
-      .tw-control-btn:hover {
+      .ext_kxTurboDev-control-btn:hover {
           background: rgba(255, 255, 255, 0.1);
           opacity: 1;
       }
       
-      .tw-control-btn.active {
-          background: var(--tw-term-accent);
+      .ext_kxTurboDev-control-btn.active {
+          background: var(--ext_kxTurboDev-term-accent);
           color: #000;
           opacity: 1;
       }
   
-      .tw-control-btn.close:hover { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-      .tw-control-btn.clear:hover { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+      .ext_kxTurboDev-control-btn.close:hover { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+      .ext_kxTurboDev-control-btn.clear:hover { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
   
-      .tw-control-btn svg {
+      .ext_kxTurboDev-control-btn svg {
           width: 16px;
           height: 16px;
           fill: currentColor;
       }
   
-      .tw-terminal-body {
+      .ext_kxTurboDev-terminal-body {
           flex: 1;
           padding: 12px 16px;
           overflow-y: auto;
@@ -232,24 +235,24 @@ const STYLES = `
       }
   
       /* Custom Scrollbar */
-      .tw-terminal-body::-webkit-scrollbar { width: 10px; }
-      .tw-terminal-body::-webkit-scrollbar-track { background: transparent; }
-      .tw-terminal-body::-webkit-scrollbar-thumb { 
-          background: var(--tw-term-border); 
+      .ext_kxTurboDev-terminal-body::-webkit-scrollbar { width: 10px; }
+      .ext_kxTurboDev-terminal-body::-webkit-scrollbar-track { background: transparent; }
+      .ext_kxTurboDev-terminal-body::-webkit-scrollbar-thumb { 
+          background: var(--ext_kxTurboDev-term-border); 
           border-radius: 5px; 
           border: 2px solid transparent;
           background-clip: content-box;
       }
-      .tw-terminal-body::-webkit-scrollbar-thumb:hover { background-color: var(--tw-term-text); opacity: 0.5; }
+      .ext_kxTurboDev-terminal-body::-webkit-scrollbar-thumb:hover { background-color: var(--ext_kxTurboDev-term-text); opacity: 0.5; }
   
       /* Jump to Bottom Button */
-      .tw-scroll-btn {
+      .ext_kxTurboDev-scroll-btn {
           position: absolute;
           bottom: 60px;
           right: 25px;
           width: 32px;
           height: 32px;
-          background: var(--tw-term-accent);
+          background: var(--ext_kxTurboDev-term-accent);
           color: #000;
           border-radius: 50%;
           display: flex;
@@ -265,17 +268,17 @@ const STYLES = `
           font-size: 14px;
           font-weight: bold;
       }
-      .tw-scroll-btn.visible {
+      .ext_kxTurboDev-scroll-btn.visible {
           opacity: 1;
           pointer-events: auto;
           transform: translateY(0);
       }
-      .tw-scroll-btn:hover {
+      .ext_kxTurboDev-scroll-btn:hover {
           transform: scale(1.1);
           filter: brightness(1.2);
       }
   
-      .tw-terminal-line {
+      .ext_kxTurboDev-terminal-line {
           margin-bottom: 1px; /* Reduced Spacing */
           word-wrap: break-word;
           white-space: pre-wrap;
@@ -286,7 +289,7 @@ const STYLES = `
       }
       
       /* Highlighted Log Tags */
-      .tw-log-tag {
+      .ext_kxTurboDev-log-tag {
           font-weight: 700;
           margin-right: 10px;
           padding: 2px 6px;
@@ -300,18 +303,18 @@ const STYLES = `
           bottom: 2px; /* Fix vertical alignment with text */
       }
       
-      .tw-tag-info { background: #3498db; color: #000; }
-      .tw-tag-warn { background: #f1c40f; color: #000; }
-      .tw-tag-fail { background: #e74c3c; color: #fff; }
-      .tw-tag-okay { background: #2ecc71; color: #000; }
-      .tw-tag-syst { background: #7f8c8d; color: #fff; }
-      .tw-tag-load { background: #3498db; color: #fff; }
-      .tw-tag-user { background: #9b59b6; color: #fff; }
-      .tw-tag-quer { background: #e67e22; color: #fff; } /* Orange for Query */
+      .ext_kxTurboDev-tag-info { background: #3498db; color: #000; }
+      .ext_kxTurboDev-tag-warn { background: #f1c40f; color: #000; }
+      .ext_kxTurboDev-tag-fail { background: #e74c3c; color: #fff; }
+      .ext_kxTurboDev-tag-okay { background: #2ecc71; color: #000; }
+      .ext_kxTurboDev-tag-syst { background: #7f8c8d; color: #fff; }
+      .ext_kxTurboDev-tag-load { background: #3498db; color: #fff; }
+      .ext_kxTurboDev-tag-user { background: #9b59b6; color: #fff; }
+      .ext_kxTurboDev-tag-quer { background: #e67e22; color: #fff; } /* Orange for Query */
   
       /* Timestamp */
-      .tw-log-time {
-          color: var(--tw-term-text);
+      .ext_kxTurboDev-log-time {
+          color: var(--ext_kxTurboDev-term-text);
           opacity: 0.4;
           font-size: 11px;
           margin-right: 8px;
@@ -321,59 +324,59 @@ const STYLES = `
       }
   
       /* Sticky Loading Line */
-      .tw-loader-sticky {
+      .ext_kxTurboDev-loader-sticky {
           position: sticky;
           z-index: 10;
-          background: var(--tw-term-bg);
-          border-bottom: 1px solid var(--tw-term-border);
+          background: var(--ext_kxTurboDev-term-bg);
+          border-bottom: 1px solid var(--ext_kxTurboDev-term-border);
           margin-bottom: 0; /* Tight spacing for groups */
           padding-top: 4px;
           padding-bottom: 4px;
           backdrop-filter: blur(4px);
       }
   
-      .tw-terminal-input-area {
+      .ext_kxTurboDev-terminal-input-area {
           display: flex;
           padding: 12px 16px;
-          background: var(--tw-term-input-bg);
-          border-top: 1px solid var(--tw-term-border);
+          background: var(--ext_kxTurboDev-term-input-bg);
+          border-top: 1px solid var(--ext_kxTurboDev-term-border);
           align-items: center;
           flex-shrink: 0;
       }
       
       /* Shake Animation Class */
-      .tw-input-shake {
-          animation: twShake 0.3s ease-in-out;
+      .ext_kxTurboDev-input-shake {
+          animation: ext_kxTurboDevShake 0.3s ease-in-out;
           border: 1px solid #e74c3c !important;
       }
   
-      .tw-terminal-prompt {
-          color: var(--tw-term-accent);
+      .ext_kxTurboDev-terminal-prompt {
+          color: var(--ext_kxTurboDev-term-accent);
           margin-right: 12px;
           font-weight: 700;
           user-select: none;
       }
   
-      .tw-terminal-input {
+      .ext_kxTurboDev-terminal-input {
           flex: 1;
           background: transparent;
           border: none;
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
           font-family: inherit;
           font-size: inherit;
           outline: none;
-          caret-color: var(--tw-term-accent);
+          caret-color: var(--ext_kxTurboDev-term-accent);
       }
   
       /* --- Settings Panel --- */
-      .tw-settings-panel {
+      .ext_kxTurboDev-settings-panel {
           position: absolute;
           top: 40px;
           right: 0;
           bottom: 0;
           width: 260px; /* Slightly wider for better controls */
-          background: var(--tw-term-bg);
-          border-left: 1px solid var(--tw-term-border);
+          background: var(--ext_kxTurboDev-term-bg);
+          border-left: 1px solid var(--ext_kxTurboDev-term-border);
           transform: translateX(100%);
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 100;
@@ -382,23 +385,23 @@ const STYLES = `
           box-sizing: border-box;
       }
   
-      .tw-settings-panel.open {
+      .ext_kxTurboDev-settings-panel.open {
           transform: translateX(0);
       }
   
-      .tw-settings-header {
+      .ext_kxTurboDev-settings-header {
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 1.5px;
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
           opacity: 0.6;
           font-weight: 700;
-          border-bottom: 1px solid var(--tw-term-border);
+          border-bottom: 1px solid var(--ext_kxTurboDev-term-border);
           padding: 15px 20px;
           background: rgba(255,255,255,0.02);
       }
       
-      .tw-settings-content {
+      .ext_kxTurboDev-settings-content {
           flex: 1;
           overflow-y: auto;
           padding: 20px;
@@ -408,24 +411,24 @@ const STYLES = `
       }
       
       /* Setting Section Headers */
-      .tw-settings-section-title {
+      .ext_kxTurboDev-settings-section-title {
           font-size: 10px;
           text-transform: uppercase;
-          color: var(--tw-term-accent);
+          color: var(--ext_kxTurboDev-term-accent);
           font-weight: bold;
           margin-bottom: -10px;
           letter-spacing: 0.5px;
       }
   
-      .tw-setting-item {
+      .ext_kxTurboDev-setting-item {
           display: flex;
           flex-direction: column;
           gap: 8px;
       }
   
-      .tw-setting-item label {
+      .ext_kxTurboDev-setting-item label {
           font-size: 12px;
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
           opacity: 0.9;
           font-family: sans-serif;
           display: flex;
@@ -436,40 +439,40 @@ const STYLES = `
       /* --- Custom Controls --- */
       
       /* Input Field */
-      .tw-setting-input, .tw-setting-select {
+      .ext_kxTurboDev-setting-input, .ext_kxTurboDev-setting-select {
           width: 100%;
           background: rgba(0,0,0,0.3);
-          border: 1px solid var(--tw-term-border);
-          color: var(--tw-term-text);
+          border: 1px solid var(--ext_kxTurboDev-term-border);
+          color: var(--ext_kxTurboDev-term-text);
           padding: 8px 10px;
           border-radius: 6px;
           font-size: 12px;
           box-sizing: border-box;
           transition: all 0.2s;
       }
-      .tw-setting-input:focus, .tw-setting-select:focus {
-          border-color: var(--tw-term-accent);
+      .ext_kxTurboDev-setting-input:focus, .ext_kxTurboDev-setting-select:focus {
+          border-color: var(--ext_kxTurboDev-term-accent);
           background: rgba(0,0,0,0.5);
           outline: none;
       }
   
       /* Slider Styling */
-      input[type=range].tw-setting-slider {
+      input[type=range].ext_kxTurboDev-setting-slider {
           -webkit-appearance: none;
           width: 100%;
           background: transparent;
       }
-      input[type=range].tw-setting-slider::-webkit-slider-thumb {
+      input[type=range].ext_kxTurboDev-setting-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           height: 14px;
           width: 14px;
           border-radius: 50%;
-          background: var(--tw-term-text);
+          background: var(--ext_kxTurboDev-term-text);
           cursor: pointer;
           margin-top: -5px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.5);
       }
-      input[type=range].tw-setting-slider::-webkit-slider-runnable-track {
+      input[type=range].ext_kxTurboDev-setting-slider::-webkit-slider-runnable-track {
           width: 100%;
           height: 4px;
           cursor: pointer;
@@ -478,14 +481,14 @@ const STYLES = `
       }
       
       /* Toggle Switch */
-      .tw-toggle-switch {
+      .ext_kxTurboDev-toggle-switch {
           position: relative;
           display: inline-block;
           width: 36px;
           height: 20px;
       }
-      .tw-toggle-switch input { opacity: 0; width: 0; height: 0; }
-      .tw-slider {
+      .ext_kxTurboDev-toggle-switch input { opacity: 0; width: 0; height: 0; }
+      .ext_kxTurboDev-slider {
           position: absolute;
           cursor: pointer;
           top: 0; left: 0; right: 0; bottom: 0;
@@ -493,7 +496,7 @@ const STYLES = `
           transition: .3s;
           border-radius: 20px;
       }
-      .tw-slider:before {
+      .ext_kxTurboDev-slider:before {
           position: absolute;
           content: "";
           height: 14px;
@@ -504,20 +507,20 @@ const STYLES = `
           transition: .3s;
           border-radius: 50%;
       }
-      input:checked + .tw-slider { background-color: var(--tw-term-accent); }
-      input:checked + .tw-slider:before { transform: translateX(16px); }
+      input:checked + .ext_kxTurboDev-slider { background-color: var(--ext_kxTurboDev-term-accent); }
+      input:checked + .ext_kxTurboDev-slider:before { transform: translateX(16px); }
   
-      .tw-settings-footer {
+      .ext_kxTurboDev-settings-footer {
           padding: 15px 20px;
-          border-top: 1px solid var(--tw-term-border);
+          border-top: 1px solid var(--ext_kxTurboDev-term-border);
           display: flex;
           justify-content: flex-end;
       }
       
-      .tw-settings-btn-close {
+      .ext_kxTurboDev-settings-btn-close {
           padding: 8px 16px;
           background: rgba(255,255,255,0.1);
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
           border: none;
           border-radius: 6px;
           cursor: pointer;
@@ -526,14 +529,14 @@ const STYLES = `
           font-weight: 600;
           transition: all 0.2s;
       }
-      .tw-settings-btn-close:hover { background: rgba(255,255,255,0.2); }
+      .ext_kxTurboDev-settings-btn-close:hover { background: rgba(255,255,255,0.2); }
       
       /* Action Button (e.g., Copy) */
-      .tw-settings-btn-action {
+      .ext_kxTurboDev-settings-btn-action {
           padding: 8px 12px;
           background: transparent;
-          color: var(--tw-term-accent);
-          border: 1px solid var(--tw-term-accent);
+          color: var(--ext_kxTurboDev-term-accent);
+          border: 1px solid var(--ext_kxTurboDev-term-accent);
           border-radius: 6px;
           cursor: pointer;
           font-size: 11px;
@@ -545,28 +548,28 @@ const STYLES = `
           margin-top: 5px;
           opacity: 0.8;
       }
-      .tw-settings-btn-action:hover {
-          background: var(--tw-term-accent);
+      .ext_kxTurboDev-settings-btn-action:hover {
+          background: var(--ext_kxTurboDev-term-accent);
           color: #000;
           opacity: 1;
       }
   
       /* Disabled state for inputs (Locked) */
-      .tw-setting-input:disabled, 
-      .tw-setting-slider:disabled,
-      .tw-toggle-switch input:disabled + .tw-slider {
+      .ext_kxTurboDev-setting-input:disabled, 
+      .ext_kxTurboDev-setting-slider:disabled,
+      .ext_kxTurboDev-toggle-switch input:disabled + .ext_kxTurboDev-slider {
           opacity: 0.5;
           cursor: not-allowed;
           filter: grayscale(1);
       }
   
       /* Toast Notification */
-      .tw-toast {
+      .ext_kxTurboDev-toast {
           position: absolute;
           bottom: 60px;
           left: 50%;
           transform: translateX(-50%) translateY(20px);
-          background: var(--tw-term-accent);
+          background: var(--ext_kxTurboDev-term-accent);
           color: #000;
           padding: 8px 16px;
           border-radius: 20px;
@@ -578,32 +581,32 @@ const STYLES = `
           box-shadow: 0 4px 12px rgba(0,0,0,0.3);
           z-index: 200;
       }
-      .tw-toast.show {
+      .ext_kxTurboDev-toast.show {
           opacity: 1;
           transform: translateX(-50%) translateY(0);
       }
   
       /* --- Performance Panel --- */
-      .tw-performance-panel {
+      .ext_kxTurboDev-performance-panel {
           flex: 1;
           display: none;
           flex-direction: column;
           padding: 15px;
           overflow-y: auto;
-          color: var(--tw-term-text);
+          color: var(--ext_kxTurboDev-term-text);
       }
-      .tw-performance-panel.visible {
+      .ext_kxTurboDev-performance-panel.visible {
           display: flex;
       }
-      .tw-stat-grid {
+      .ext_kxTurboDev-stat-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
           margin-bottom: 15px;
       }
-      .tw-stat-card {
+      .ext_kxTurboDev-stat-card {
           background: rgba(255,255,255,0.05);
-          border: 1px solid var(--tw-term-border);
+          border: 1px solid var(--ext_kxTurboDev-term-border);
           padding: 10px;
           border-radius: 6px;
           display: flex;
@@ -611,21 +614,21 @@ const STYLES = `
           align-items: center;
           justify-content: center;
       }
-      .tw-stat-value {
+      .ext_kxTurboDev-stat-value {
           font-size: 20px;
           font-weight: bold;
-          color: var(--tw-term-accent);
+          color: var(--ext_kxTurboDev-term-accent);
           margin-bottom: 4px;
       }
-      .tw-stat-label {
+      .ext_kxTurboDev-stat-label {
           font-size: 10px;
           text-transform: uppercase;
           opacity: 0.6;
           letter-spacing: 0.5px;
       }
-      .tw-graph-container {
+      .ext_kxTurboDev-graph-container {
           background: rgba(0,0,0,0.2);
-          border: 1px solid var(--tw-term-border);
+          border: 1px solid var(--ext_kxTurboDev-term-border);
           border-radius: 6px;
           padding: 10px;
           height: 140px;
@@ -634,13 +637,13 @@ const STYLES = `
           display: flex;
           flex-direction: column;
       }
-      .tw-graph-header {
+      .ext_kxTurboDev-graph-header {
           font-size: 10px;
           text-transform: uppercase;
           opacity: 0.6;
           margin-bottom: 5px;
       }
-      .tw-graph-canvas {
+      .ext_kxTurboDev-graph-canvas {
           width: 100%;
           height: 100%;
           display: block;
@@ -712,6 +715,9 @@ class TurboDevExtension {
     this.pendingQuery = null;
     this.userAnswer = '';
 
+    // Hybrid Trigger for Hat Block
+    this._triggerHat = false;
+
     this.indentLevel = 0;
     this.loaderStack = [];
     this.ASCII_FRAMES = ['|', '/', '-', '\\'];
@@ -724,6 +730,14 @@ class TurboDevExtension {
     this.boundKeyDown = this._handleKeyDown.bind(this);
     this.boundStopAll = this._onStopAll.bind(this);
 
+    // CRITICAL FIX: Bind block methods to 'this'
+    this.printText = this.printText.bind(this);
+    this.getLastCommand = this.getLastCommand.bind(this);
+    this.getAnswer = this.getAnswer.bind(this);
+    this.getSettingValue = this.getSettingValue.bind(this);
+    this.queryUser = this.queryUser.bind(this);
+    this.whenCommandReceived = this.whenCommandReceived.bind(this);
+
     this._loadSettings();
     this._createUI();
     this._setupGlobalHotkeys();
@@ -735,14 +749,16 @@ class TurboDevExtension {
     // Start Perf Loop
     requestAnimationFrame(this._loopPerformance.bind(this));
 
-    // Register Global Instance
-    window.__TurboDev = this;
+    // Register Global Instance and Runtime Instance with kxTurboDev namespace
+    Scratch.vm.runtime.ext_kxTurboDev = this;
+    Scratch.vm.runtime.__TurboDev = this; // Explicit request
+    window.__TurboDev = this; // Maintain existing behavior
   }
 
   dispose() {
     if (this.container) this.container.remove();
-    if (document.getElementById('tw-terminal-extension-style')) {
-      document.getElementById('tw-terminal-extension-style').remove();
+    if (document.getElementById('ext_kxTurboDev-terminal-extension-style')) {
+      document.getElementById('ext_kxTurboDev-terminal-extension-style').remove();
     }
 
     document.removeEventListener('keydown', this.boundKeyDown);
@@ -757,15 +773,22 @@ class TurboDevExtension {
     this.isPerfMode = false;
     this.isVisible = false;
 
-    // Clean up global
+    // Clean up globals
     if (window.__TurboDev === this) {
       delete window.__TurboDev;
+    }
+    if (Scratch.vm.runtime.ext_kxTurboDev === this) {
+      delete Scratch.vm.runtime.ext_kxTurboDev;
+    }
+    if (Scratch.vm.runtime.__TurboDev === this) {
+      delete Scratch.vm.runtime.__TurboDev;
     }
   }
 
   _loadSettings() {
     try {
-      const stored = localStorage.getItem('turbodev_settings');
+      // Updated storage key to match namespace
+      const stored = localStorage.getItem('ext_kxTurboDev_settings');
       if (stored) {
         const parsed = JSON.parse(stored);
         this.systemSettings = { ...this.systemSettings, ...parsed };
@@ -777,7 +800,7 @@ class TurboDevExtension {
 
   _saveSettings() {
     try {
-      localStorage.setItem('turbodev_settings', JSON.stringify(this.systemSettings));
+      localStorage.setItem('ext_kxTurboDev_settings', JSON.stringify(this.systemSettings));
     } catch (e) {
       console.warn('TurboDev: Failed to save settings', e);
     }
@@ -1001,7 +1024,7 @@ class TurboDevExtension {
       this.pendingQuery.resolve(); // Resolve empty string/null to unblock stack
       this.pendingQuery = null;
       this.promptLabel.textContent = '>';
-      this.inputField.classList.remove('tw-input-shake');
+      this.inputField.classList.remove('ext_kxTurboDev-input-shake');
     }
   }
 
@@ -1027,36 +1050,36 @@ class TurboDevExtension {
   }
 
   _createUI() {
-    if (document.getElementById('tw-terminal-extension-style')) return;
+    if (document.getElementById('ext_kxTurboDev-terminal-extension-style')) return;
 
     const styleSheet = document.createElement('style');
-    styleSheet.id = 'tw-terminal-extension-style';
+    styleSheet.id = 'ext_kxTurboDev-terminal-extension-style';
     styleSheet.textContent = STYLES;
     document.head.appendChild(styleSheet);
 
     this.container = document.createElement('div');
-    this.container.className = 'tw-terminal-wrapper';
+    this.container.className = 'ext_kxTurboDev-terminal-wrapper';
     this.container.style.display = 'none';
 
     // Apply loaded system settings initially
     this._applySystemSettings();
 
     const header = document.createElement('div');
-    header.className = 'tw-terminal-header';
+    header.className = 'ext_kxTurboDev-terminal-header';
 
     const titleGroup = document.createElement('div');
-    titleGroup.className = 'tw-terminal-title';
+    titleGroup.className = 'ext_kxTurboDev-terminal-title';
     const statusDot = document.createElement('div');
-    statusDot.className = 'tw-terminal-status';
+    statusDot.className = 'ext_kxTurboDev-terminal-status';
     const titleText = document.createTextNode('TurboDev');
     titleGroup.appendChild(statusDot);
     titleGroup.appendChild(titleText);
 
     const controls = document.createElement('div');
-    controls.className = 'tw-terminal-controls';
+    controls.className = 'ext_kxTurboDev-terminal-controls';
 
     const minBtn = document.createElement('button');
-    minBtn.className = 'tw-control-btn minimize';
+    minBtn.className = 'ext_kxTurboDev-control-btn minimize';
     minBtn.title = 'Minimize';
     minBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19,13H5V11H19V13Z" /></svg>';
     minBtn.onclick = e => {
@@ -1066,7 +1089,7 @@ class TurboDevExtension {
 
     // Performance Toggle Button
     this.perfBtn = document.createElement('button');
-    this.perfBtn.className = 'tw-control-btn perf';
+    this.perfBtn.className = 'ext_kxTurboDev-control-btn perf';
     this.perfBtn.title = 'Performance Monitor';
     this.perfBtn.innerHTML =
       '<svg viewBox="0 0 24 24"><path d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z" /></svg>';
@@ -1076,7 +1099,7 @@ class TurboDevExtension {
     };
 
     const clearBtn = document.createElement('button');
-    clearBtn.className = 'tw-control-btn clear';
+    clearBtn.className = 'ext_kxTurboDev-control-btn clear';
     clearBtn.title = 'Clear Console';
     clearBtn.innerHTML =
       '<svg viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg>';
@@ -1086,7 +1109,7 @@ class TurboDevExtension {
     };
 
     this.settingsBtn = document.createElement('button');
-    this.settingsBtn.className = 'tw-control-btn settings';
+    this.settingsBtn.className = 'ext_kxTurboDev-control-btn settings';
     this.settingsBtn.title = 'Settings';
     this.settingsBtn.innerHTML =
       '<svg viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.35 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.35 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.04 4.95,18.95L7.44,17.95C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.95L19.05,18.95C19.27,19.04 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" /></svg>';
@@ -1096,7 +1119,7 @@ class TurboDevExtension {
     };
 
     const closeBtn = document.createElement('button');
-    closeBtn.className = 'tw-control-btn close';
+    closeBtn.className = 'ext_kxTurboDev-control-btn close';
     closeBtn.title = 'Close';
     closeBtn.innerHTML =
       '<svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" /></svg>';
@@ -1112,14 +1135,14 @@ class TurboDevExtension {
     header.appendChild(controls);
 
     this.settingsPanel = document.createElement('div');
-    this.settingsPanel.className = 'tw-settings-panel';
+    this.settingsPanel.className = 'ext_kxTurboDev-settings-panel';
 
     this.outputContainer = document.createElement('div');
-    this.outputContainer.className = 'tw-terminal-body';
+    this.outputContainer.className = 'ext_kxTurboDev-terminal-body';
 
     // Performance Panel
     this.perfContainer = document.createElement('div');
-    this.perfContainer.className = 'tw-performance-panel';
+    this.perfContainer.className = 'ext_kxTurboDev-performance-panel';
     this._buildPerfUI(this.perfContainer);
 
     this.outputContainer.addEventListener('scroll', () => {
@@ -1139,7 +1162,7 @@ class TurboDevExtension {
     });
 
     this.scrollBtn = document.createElement('div');
-    this.scrollBtn.className = 'tw-scroll-btn';
+    this.scrollBtn.className = 'ext_kxTurboDev-scroll-btn';
     this.scrollBtn.textContent = '⬇';
     this.scrollBtn.title = 'Jump to Bottom';
     this.scrollBtn.onclick = () => {
@@ -1147,18 +1170,18 @@ class TurboDevExtension {
     };
 
     this.toast = document.createElement('div');
-    this.toast.className = 'tw-toast';
+    this.toast.className = 'ext_kxTurboDev-toast';
     this.toast.textContent = 'Notification';
 
     const inputArea = document.createElement('div');
-    inputArea.className = 'tw-terminal-input-area';
+    inputArea.className = 'ext_kxTurboDev-terminal-input-area';
 
     this.promptLabel = document.createElement('span');
-    this.promptLabel.className = 'tw-terminal-prompt';
+    this.promptLabel.className = 'ext_kxTurboDev-terminal-prompt';
     this.promptLabel.textContent = '>';
 
     this.inputField = document.createElement('input');
-    this.inputField.className = 'tw-terminal-input';
+    this.inputField.className = 'ext_kxTurboDev-terminal-input';
     this.inputField.type = 'text';
     this.inputField.spellcheck = false;
     this.inputField.autocomplete = 'off';
@@ -1240,7 +1263,7 @@ class TurboDevExtension {
   _buildPerfUI(container) {
     // Stats Grid
     const grid = document.createElement('div');
-    grid.className = 'tw-stat-grid';
+    grid.className = 'ext_kxTurboDev-stat-grid';
 
     this.fpsCard = this._createStatCard(grid, 'FPS', '0');
     this.cloneCard = this._createStatCard(grid, 'Objects', '0');
@@ -1251,15 +1274,15 @@ class TurboDevExtension {
 
     // Graph
     const graphCont = document.createElement('div');
-    graphCont.className = 'tw-graph-container';
+    graphCont.className = 'ext_kxTurboDev-graph-container';
 
     const header = document.createElement('div');
-    header.className = 'tw-graph-header';
+    header.className = 'ext_kxTurboDev-graph-header';
     header.textContent = 'Performance History (Green: FPS, Blue: Clones)';
     graphCont.appendChild(header);
 
     this.perfCanvas = document.createElement('canvas');
-    this.perfCanvas.className = 'tw-graph-canvas';
+    this.perfCanvas.className = 'ext_kxTurboDev-graph-canvas';
     graphCont.appendChild(this.perfCanvas);
 
     container.appendChild(graphCont);
@@ -1267,12 +1290,12 @@ class TurboDevExtension {
 
   _createStatCard(container, label, initialValue) {
     const card = document.createElement('div');
-    card.className = 'tw-stat-card';
+    card.className = 'ext_kxTurboDev-stat-card';
     const val = document.createElement('span');
-    val.className = 'tw-stat-value';
+    val.className = 'ext_kxTurboDev-stat-value';
     val.textContent = initialValue;
     const lbl = document.createElement('span');
-    lbl.className = 'tw-stat-label';
+    lbl.className = 'ext_kxTurboDev-stat-label';
     lbl.textContent = label;
     card.appendChild(val);
     card.appendChild(lbl);
@@ -1418,9 +1441,9 @@ class TurboDevExtension {
   _toggleMinimize() {
     this.isMinimized = !this.isMinimized;
     if (this.isMinimized) {
-      this.container.classList.add('tw-minimized');
+      this.container.classList.add('ext_kxTurboDev-minimized');
     } else {
-      this.container.classList.remove('tw-minimized');
+      this.container.classList.remove('ext_kxTurboDev-minimized');
       setTimeout(() => this.inputField.focus(), 50);
     }
   }
@@ -1444,26 +1467,26 @@ class TurboDevExtension {
     this.settingsPanel.innerHTML = '';
 
     const header = document.createElement('div');
-    header.className = 'tw-settings-header';
+    header.className = 'ext_kxTurboDev-settings-header';
     header.textContent = 'System Preferences';
     this.settingsPanel.appendChild(header);
 
     const content = document.createElement('div');
-    content.className = 'tw-settings-content';
+    content.className = 'ext_kxTurboDev-settings-content';
     this.settingsPanel.appendChild(content);
 
     const secApp = document.createElement('div');
-    secApp.className = 'tw-settings-section-title';
+    secApp.className = 'ext_kxTurboDev-settings-section-title';
     secApp.textContent = 'Appearance';
     content.appendChild(secApp);
 
     // Theme Selector
     const themeRow = document.createElement('div');
-    themeRow.className = 'tw-setting-item';
+    themeRow.className = 'ext_kxTurboDev-setting-item';
     const themeLabel = document.createElement('label');
     themeLabel.textContent = 'Theme';
     const themeSelect = document.createElement('select');
-    themeSelect.className = 'tw-setting-select';
+    themeSelect.className = 'ext_kxTurboDev-setting-select';
 
     ['standard', 'matrix', 'ocean', 'retro'].forEach(t => {
       const opt = document.createElement('option');
@@ -1528,13 +1551,13 @@ class TurboDevExtension {
 
     // --- Section: Actions ---
     const secAction = document.createElement('div');
-    secAction.className = 'tw-settings-section-title';
+    secAction.className = 'ext_kxTurboDev-settings-section-title';
     secAction.textContent = 'Actions';
     secAction.style.marginTop = '10px';
     content.appendChild(secAction);
 
     const copyBtn = document.createElement('button');
-    copyBtn.className = 'tw-settings-btn-action';
+    copyBtn.className = 'ext_kxTurboDev-settings-btn-action';
     copyBtn.textContent = 'Copy History to Clipboard';
     copyBtn.onclick = () => {
       const text = this.outputContainer.innerText;
@@ -1551,7 +1574,7 @@ class TurboDevExtension {
     content.appendChild(copyBtn);
 
     const exportBtn = document.createElement('button');
-    exportBtn.className = 'tw-settings-btn-action';
+    exportBtn.className = 'ext_kxTurboDev-settings-btn-action';
     exportBtn.textContent = 'Export Logs to File';
     exportBtn.onclick = () => this._exportLogs();
     content.appendChild(exportBtn);
@@ -1559,7 +1582,7 @@ class TurboDevExtension {
     // --- Section: Custom Settings ---
     if (this.customSettings.size > 0) {
       const secCustom = document.createElement('div');
-      secCustom.className = 'tw-settings-section-title';
+      secCustom.className = 'ext_kxTurboDev-settings-section-title';
       secCustom.textContent = 'Game Settings';
       secCustom.style.marginTop = '10px';
       content.appendChild(secCustom);
@@ -1591,9 +1614,9 @@ class TurboDevExtension {
 
     // Footer
     const footer = document.createElement('div');
-    footer.className = 'tw-settings-footer';
+    footer.className = 'ext_kxTurboDev-settings-footer';
     const doneBtn = document.createElement('button');
-    doneBtn.className = 'tw-settings-btn-close';
+    doneBtn.className = 'ext_kxTurboDev-settings-btn-close';
     doneBtn.textContent = 'Done';
     doneBtn.onclick = () => this._toggleSettings();
     footer.appendChild(doneBtn);
@@ -1601,9 +1624,13 @@ class TurboDevExtension {
   }
 
   _setTheme(themeName) {
-    this.container.classList.remove('tw-theme-matrix', 'tw-theme-ocean', 'tw-theme-retro');
+    this.container.classList.remove(
+      'ext_kxTurboDev-theme-matrix',
+      'ext_kxTurboDev-theme-ocean',
+      'ext_kxTurboDev-theme-retro'
+    );
     if (themeName !== 'standard') {
-      this.container.classList.add(`tw-theme-${themeName}`);
+      this.container.classList.add(`ext_kxTurboDev-theme-${themeName}`);
     }
     this.systemSettings.theme = themeName;
   }
@@ -1657,7 +1684,7 @@ class TurboDevExtension {
         height: this.container.style.height,
       };
 
-      this.container.classList.add('tw-cli-mode');
+      this.container.classList.add('ext_kxTurboDev-cli-mode');
 
       // If currently minimized, maximize it because minimized CLI mode looks broken/hidden
       if (this.isMinimized) this._toggleMinimize();
@@ -1666,7 +1693,7 @@ class TurboDevExtension {
       if (this.cliReqId) cancelAnimationFrame(this.cliReqId);
       this.cliReqId = requestAnimationFrame(this._updateCliPosition.bind(this));
     } else {
-      this.container.classList.remove('tw-cli-mode');
+      this.container.classList.remove('ext_kxTurboDev-cli-mode');
 
       // Stop tracking loop
       if (this.cliReqId) {
@@ -1759,20 +1786,20 @@ class TurboDevExtension {
   unlockSettingsMenu() {
     this.isSettingsMenuLocked = false;
     // Only show if not in CLI mode (which hides it by default css)
-    if (!this.container.classList.contains('tw-cli-mode')) {
+    if (!this.container.classList.contains('ext_kxTurboDev-cli-mode')) {
       this.settingsBtn.style.display = 'flex';
     }
   }
 
   _addToggle(container, labelText, id, currentValue, onChange) {
     const row = document.createElement('div');
-    row.className = 'tw-setting-item';
+    row.className = 'ext_kxTurboDev-setting-item';
 
     const label = document.createElement('label');
     label.textContent = labelText;
 
     const switchWrap = document.createElement('label');
-    switchWrap.className = 'tw-toggle-switch';
+    switchWrap.className = 'ext_kxTurboDev-toggle-switch';
 
     const input = document.createElement('input');
     input.type = 'checkbox';
@@ -1784,7 +1811,7 @@ class TurboDevExtension {
     input.onchange = e => onChange(e.target.checked);
 
     const slider = document.createElement('span');
-    slider.className = 'tw-slider';
+    slider.className = 'ext_kxTurboDev-slider';
 
     switchWrap.appendChild(input);
     switchWrap.appendChild(slider);
@@ -1796,14 +1823,14 @@ class TurboDevExtension {
 
   _addSlider(container, labelText, id, currentValue, min, max, onChange) {
     const row = document.createElement('div');
-    row.className = 'tw-setting-item';
+    row.className = 'ext_kxTurboDev-setting-item';
 
     const label = document.createElement('label');
     label.textContent = `${labelText}: ${currentValue}`;
 
     const input = document.createElement('input');
     input.type = 'range';
-    input.className = 'tw-setting-slider';
+    input.className = 'ext_kxTurboDev-setting-slider';
     input.min = min;
     input.max = max;
     input.step = max - min > 2 ? 1 : 0.1;
@@ -1825,14 +1852,14 @@ class TurboDevExtension {
 
   _addNumberInput(container, labelText, id, currentValue, min, max, onChange) {
     const row = document.createElement('div');
-    row.className = 'tw-setting-item';
+    row.className = 'ext_kxTurboDev-setting-item';
 
     const label = document.createElement('label');
     label.textContent = labelText;
 
     const input = document.createElement('input');
     input.type = 'number';
-    input.className = 'tw-setting-input';
+    input.className = 'ext_kxTurboDev-setting-input';
     input.value = currentValue;
     input.min = min;
     input.max = max;
@@ -1855,14 +1882,14 @@ class TurboDevExtension {
 
   _addTextInput(container, labelText, id, currentValue, onChange) {
     const row = document.createElement('div');
-    row.className = 'tw-setting-item';
+    row.className = 'ext_kxTurboDev-setting-item';
 
     const label = document.createElement('label');
     label.textContent = labelText;
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'tw-setting-input';
+    input.className = 'ext_kxTurboDev-setting-input';
     input.value = currentValue;
 
     // Lock Check
@@ -1894,7 +1921,7 @@ class TurboDevExtension {
 
     dragHandle.addEventListener('mousedown', e => {
       // Don't drag if clicking a button or if in CLI mode
-      if (e.target.closest('.tw-control-btn')) return;
+      if (e.target.closest('.ext_kxTurboDev-control-btn')) return;
       if (this.systemSettings.cliMode) return;
 
       isDragging = true;
@@ -1989,8 +2016,8 @@ class TurboDevExtension {
         } else {
           this._addLine(`@c #e74c3c:Invalid input. Expected ${type}.@c`);
           // Shake Effect
-          this.inputField.classList.add('tw-input-shake');
-          setTimeout(() => this.inputField.classList.remove('tw-input-shake'), 300);
+          this.inputField.classList.add('ext_kxTurboDev-input-shake');
+          setTimeout(() => this.inputField.classList.remove('ext_kxTurboDev-input-shake'), 300);
         }
         return;
       }
@@ -2086,7 +2113,18 @@ class TurboDevExtension {
       }
 
       // Trigger Scratch Hat Block for custom logic
-      runtime.startHats('turbodev_whenCommandReceived');
+      // We set a flag to ensure polling works if startHats fails to run the thread immediately
+      this._triggerHat = true;
+
+      const hatOpcode = `${this.getInfo().id}_whenCommandReceived`;
+      console.log(`[TurboDev] Firing hat block: ${hatOpcode}`);
+      const threads = vm.runtime.startHats(hatOpcode);
+      console.log(`[TurboDev] Threads started: ${threads.length}`);
+
+      // Reset trigger after a short delay (single frame pulse)
+      setTimeout(() => {
+        this._triggerHat = false;
+      }, 50);
     } catch (err) {
       console.error('TurboDev Command Error:', err);
       this._addLine(`@c #e74c3c:System Error: ${err.message}@c`);
@@ -2126,7 +2164,7 @@ class TurboDevExtension {
 
   _addLine(text) {
     const line = document.createElement('div');
-    line.className = 'tw-terminal-line';
+    line.className = 'ext_kxTurboDev-terminal-line';
 
     // Add Indentation
     line.style.paddingLeft = `${this.indentLevel * 24}px`;
@@ -2134,7 +2172,7 @@ class TurboDevExtension {
     // Add Timestamp
     if (this.systemSettings.showTimestamps) {
       const timeSpan = document.createElement('span');
-      timeSpan.className = 'tw-log-time';
+      timeSpan.className = 'ext_kxTurboDev-log-time';
       const now = new Date();
       timeSpan.textContent = `[${now.toLocaleTimeString('en-US', { hour12: false })}] `;
       line.appendChild(timeSpan);
@@ -2145,7 +2183,7 @@ class TurboDevExtension {
     textSpan.innerHTML = this._parseFormatting(text);
 
     // Default styling is now handled by CSS var, no specific type class logic
-    textSpan.style.color = 'var(--tw-term-text)';
+    textSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
 
     line.appendChild(textSpan);
 
@@ -2167,7 +2205,8 @@ class TurboDevExtension {
   startLoading(args) {
     const text = String(args.TEXT);
     const line = document.createElement('div');
-    line.className = 'tw-terminal-line tw-term-system tw-loader-sticky';
+    line.className =
+      'ext_kxTurboDev-terminal-line ext_kxTurboDev-term-system ext_kxTurboDev-loader-sticky';
 
     // Apply indentation
     line.style.paddingLeft = `${this.indentLevel * 24}px`;
@@ -2181,7 +2220,7 @@ class TurboDevExtension {
     spinnerSpan.style.display = 'inline-block';
     spinnerSpan.style.width = '14px';
     spinnerSpan.style.marginRight = '8px';
-    spinnerSpan.style.color = 'var(--tw-term-accent)'; // Changed to var
+    spinnerSpan.style.color = 'var(--ext_kxTurboDev-term-accent)'; // Changed to var
     // Initial Frame (ASCII)
     spinnerSpan.textContent = this.ASCII_FRAMES[0];
 
@@ -2221,7 +2260,7 @@ class TurboDevExtension {
     clearInterval(loader.interval);
 
     // Remove sticky behavior
-    loader.line.classList.remove('tw-loader-sticky');
+    loader.line.classList.remove('ext_kxTurboDev-loader-sticky');
     loader.line.style.top = ''; // Reset top
 
     // Decrease indentation
@@ -2273,7 +2312,8 @@ class TurboDevExtension {
   }
 
   whenCommandReceived() {
-    return false;
+    // Return the trigger state - effectively polling + event support
+    return this._triggerHat;
   }
 
   registerCommand(args) {
@@ -2362,7 +2402,8 @@ class TurboDevExtension {
     this.isVisible = true;
     this.container.style.animation = 'none';
     this.container.offsetHeight;
-    this.container.style.animation = 'twTermSlideIn 0.25s cubic-bezier(0.19, 1, 0.22, 1)';
+    this.container.style.animation =
+      'ext_kxTurboDevTermSlideIn 0.25s cubic-bezier(0.19, 1, 0.22, 1)';
 
     // Resume perf loop if mode is active
     if (this.isPerfMode) this._startPerfLoop();
@@ -2395,7 +2436,10 @@ class TurboDevExtension {
   }
 
   printText(args) {
-    this._addLine(args.TEXT);
+    // Debugging
+    console.log('[TurboDev] printText called with:', args);
+    // Ensure string conversion to prevent crashes if input is null/undefined
+    this._addLine(String(args.TEXT));
   }
 
   setPrompt(args) {
@@ -2405,7 +2449,8 @@ class TurboDevExtension {
   }
 
   getLastCommand() {
-    return this.lastCommand;
+    console.log('[TurboDev] getLastCommand called. Value:', this.lastCommand);
+    return this.lastCommand || '';
   }
 
   isTerminalOpen() {
