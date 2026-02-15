@@ -741,9 +741,6 @@ class TurboDevExtension {
     this.pendingQuery = null;
     this.userAnswer = '';
 
-    // Hybrid Trigger for Hat Block
-    this._triggerHat = false;
-
     this.indentLevel = 0;
     this.loaderStack = [];
     this.ASCII_FRAMES = ['|', '/', '-', '\\'];
@@ -762,7 +759,8 @@ class TurboDevExtension {
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
     this.queryUser = this.queryUser.bind(this);
-    this.whenCommandReceived = this.whenCommandReceived.bind(this);
+    // REMOVED: this.whenCommandReceived = this.whenCommandReceived.bind(this);
+    // ^ Event blocks must not have a bound function or they conflict with Scratch runtime.
 
     this._loadSettings();
     this._createUI();
@@ -1005,9 +1003,9 @@ class TurboDevExtension {
         },
         {
           opcode: 'whenCommandReceived',
-          blockType: Scratch.BlockType.HAT,
+          blockType: Scratch.BlockType.EVENT,
           text: 'when command received',
-          isEdgeActivated: false,
+          isEdgeActivated: false, // REQUIRED boilerplate for Event blocks
         },
         {
           opcode: 'getLastCommand',
