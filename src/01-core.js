@@ -16,7 +16,7 @@ if (runtime.ext_kxTurboDev) {
 // Namespace: ext_kxTurboDev-...
 const STYLES = `
       :root {
-          --ext_kxTurboDev-term-bg: rgba(15, 15, 15, 0.92);
+          --ext_kxTurboDev-term-bg: rgba(15, 15, 15, 0.95);
           --ext_kxTurboDev-term-text: #e4e4e4;
           --ext_kxTurboDev-term-accent: #3498db;
           --ext_kxTurboDev-term-border: rgba(255, 255, 255, 0.1);
@@ -120,6 +120,7 @@ const STYLES = `
           backdrop-filter: none !important;
           resize: none !important;
           box-shadow: none !important;
+          z-index: 500 !important; /* Ensure it stays below TurboWarp modals */
       }
       
       /* Hide Close/Minimize/Clear Button in CLI Mode */
@@ -458,12 +459,12 @@ const STYLES = `
   
       /* Slider Styling */
       input[type=range].ext_kxTurboDev-setting-slider {
-          -webkit-appearance: none;
+          -webkit-appearance: auto;
           width: 100%;
           background: transparent;
       }
       input[type=range].ext_kxTurboDev-setting-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
+          -webkit-appearance: auto;
           height: 14px;
           width: 14px;
           border-radius: 50%;
@@ -586,14 +587,15 @@ const STYLES = `
           transform: translateX(-50%) translateY(0);
       }
   
-      /* --- Performance Panel --- */
+      /* --- Performance Panel (GLOW UP) --- */
       .ext_kxTurboDev-performance-panel {
           flex: 1;
           display: none;
           flex-direction: column;
-          padding: 15px;
+          padding: 20px;
           overflow-y: auto;
           color: var(--ext_kxTurboDev-term-text);
+          background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
       }
       .ext_kxTurboDev-performance-panel.visible {
           display: flex;
@@ -601,47 +603,71 @@ const STYLES = `
       .ext_kxTurboDev-stat-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 10px;
-          margin-bottom: 15px;
+          gap: 12px;
+          margin-bottom: 20px;
       }
       .ext_kxTurboDev-stat-card {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid var(--ext_kxTurboDev-term-border);
-          padding: 10px;
-          border-radius: 6px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.08);
+          padding: 16px;
+          border-radius: 12px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          position: relative;
+          overflow: hidden;
+          transition: transform 0.2s ease, background-color 0.2s ease;
       }
+      .ext_kxTurboDev-stat-card:hover {
+          background: rgba(255,255,255,0.06);
+          transform: translateY(-2px);
+      }
+      
+      /* Top Colored Line */
+      .ext_kxTurboDev-stat-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0; height: 3px;
+          background: currentColor;
+          opacity: 0.7;
+          box-shadow: 0 0 10px currentColor;
+      }
+
       .ext_kxTurboDev-stat-value {
-          font-size: 20px;
-          font-weight: bold;
-          color: var(--ext_kxTurboDev-term-accent);
-          margin-bottom: 4px;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          font-size: 28px;
+          font-weight: 800;
+          margin-bottom: 6px;
+          text-shadow: 0 0 15px currentColor;
       }
       .ext_kxTurboDev-stat-label {
-          font-size: 10px;
+          font-size: 11px;
           text-transform: uppercase;
           opacity: 0.6;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
+          font-weight: 600;
       }
+      
       .ext_kxTurboDev-graph-container {
-          background: rgba(0,0,0,0.2);
+          background: rgba(0,0,0,0.3);
           border: 1px solid var(--ext_kxTurboDev-term-border);
-          border-radius: 6px;
-          padding: 10px;
-          height: 140px;
+          border-radius: 12px;
+          padding: 16px;
+          height: 180px;
           position: relative;
-          margin-bottom: 15px;
+          margin-bottom: 20px;
           display: flex;
           flex-direction: column;
+          box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
       }
       .ext_kxTurboDev-graph-header {
           font-size: 10px;
           text-transform: uppercase;
-          opacity: 0.6;
-          margin-bottom: 5px;
+          opacity: 0.5;
+          margin-bottom: 8px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
       }
       .ext_kxTurboDev-graph-canvas {
           width: 100%;
@@ -736,7 +762,9 @@ class TurboDevExtension {
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
     this.queryUser = this.queryUser.bind(this);
-    this.whenCommandReceived = this.whenCommandReceived.bind(this);
+    this.runCommand = this.runCommand.bind(this);
+    // REMOVED: this.whenCommandReceived = this.whenCommandReceived.bind(this);
+    // ^ Event blocks must not have a bound function or they conflict with Scratch runtime.
 
     this._loadSettings();
     this._createUI();
@@ -828,6 +856,17 @@ class TurboDevExtension {
           opcode: 'clearTerminal',
           blockType: Scratch.BlockType.COMMAND,
           text: 'clear terminal',
+        },
+        {
+          opcode: 'runCommand',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'run command [COMMAND]',
+          arguments: {
+            COMMAND: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: 'help',
+            },
+          },
         },
         '---',
         {
@@ -979,9 +1018,9 @@ class TurboDevExtension {
         },
         {
           opcode: 'whenCommandReceived',
-          blockType: Scratch.BlockType.HAT,
+          blockType: Scratch.BlockType.EVENT,
           text: 'when command received',
-          isEdgeActivated: false,
+          isEdgeActivated: false, // REQUIRED boilerplate for Event blocks
         },
         {
           opcode: 'getLastCommand',
@@ -1232,7 +1271,11 @@ class TurboDevExtension {
 
     this.container.addEventListener('click', e => {
       if (this.isMinimized) return;
-      this.container.style.zIndex = '99999';
+
+      // Only boost z-index if NOT in CLI mode to avoid covering modals
+      if (!this.systemSettings.cliMode) {
+        this.container.style.zIndex = '99999';
+      }
 
       if (this.settingsPanel.classList.contains('open') && this.settingsPanel.contains(e.target)) {
         return;
@@ -1265,10 +1308,11 @@ class TurboDevExtension {
     const grid = document.createElement('div');
     grid.className = 'ext_kxTurboDev-stat-grid';
 
-    this.fpsCard = this._createStatCard(grid, 'FPS', '0');
-    this.cloneCard = this._createStatCard(grid, 'Objects', '0');
-    this.threadCard = this._createStatCard(grid, 'Threads', '0');
-    this.timeCard = this._createStatCard(grid, 'Uptime', '0s');
+    // Color-coded stats
+    this.fpsCard = this._createStatCard(grid, 'FPS', '0', '#2ecc71'); // Green
+    this.cloneCard = this._createStatCard(grid, 'Objects', '0', '#3498db'); // Blue
+    this.threadCard = this._createStatCard(grid, 'Threads', '0', '#e67e22'); // Orange
+    this.timeCard = this._createStatCard(grid, 'Uptime', '0s', '#9b59b6'); // Purple
 
     container.appendChild(grid);
 
@@ -1288,9 +1332,11 @@ class TurboDevExtension {
     container.appendChild(graphCont);
   }
 
-  _createStatCard(container, label, initialValue) {
+  _createStatCard(container, label, initialValue, color) {
     const card = document.createElement('div');
     card.className = 'ext_kxTurboDev-stat-card';
+    if (color) card.style.color = color;
+
     const val = document.createElement('span');
     val.className = 'ext_kxTurboDev-stat-value';
     val.textContent = initialValue;
@@ -1398,17 +1444,43 @@ class TurboDevExtension {
       ctx.clearRect(0, 0, w, h);
 
       // Draw Grid
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(0, h / 2);
-      ctx.lineTo(w, h / 2);
+      // Horizontal grid
+      for (let j = 1; j < 4; j++) {
+        ctx.moveTo(0, j * (h / 4));
+        ctx.lineTo(w, j * (h / 4));
+      }
       ctx.stroke();
 
-      // Draw FPS (Green)
+      const step = w / 50;
+
+      // --- Draw FPS (Green) with Gradient Fill ---
+      const fpsGradient = ctx.createLinearGradient(0, 0, 0, h);
+      fpsGradient.addColorStop(0, 'rgba(46, 204, 113, 0.4)');
+      fpsGradient.addColorStop(1, 'rgba(46, 204, 113, 0.0)');
+
+      ctx.fillStyle = fpsGradient;
       ctx.strokeStyle = '#2ecc71';
       ctx.lineWidth = 2;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#2ecc71';
+
       ctx.beginPath();
-      const step = w / 50;
+      ctx.moveTo(0, h); // Start bottom left
+      this.perfData.fps.forEach((val, i) => {
+        const y = h - (Math.min(val, 60) / 60) * h;
+        if (i === 0) ctx.lineTo(0, y);
+        else ctx.lineTo(i * step, y);
+      });
+      ctx.lineTo((this.perfData.fps.length - 1) * step, h); // To bottom right
+      ctx.closePath();
+      ctx.fill();
+
+      // Stroke on top
+      ctx.shadowBlur = 0; // Reset shadow for line sharpness or keep it
+      ctx.beginPath();
       this.perfData.fps.forEach((val, i) => {
         const y = h - (Math.min(val, 60) / 60) * h;
         if (i === 0) ctx.moveTo(0, y);
@@ -1416,8 +1488,30 @@ class TurboDevExtension {
       });
       ctx.stroke();
 
-      // Draw Clones (Blue) scaled 0-300
+      // --- Draw Clones (Blue) with Gradient Fill ---
+      const cloneGradient = ctx.createLinearGradient(0, 0, 0, h);
+      cloneGradient.addColorStop(0, 'rgba(52, 152, 219, 0.4)');
+      cloneGradient.addColorStop(1, 'rgba(52, 152, 219, 0.0)');
+
+      ctx.fillStyle = cloneGradient;
       ctx.strokeStyle = '#3498db';
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#3498db';
+
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      this.perfData.clones.forEach((val, i) => {
+        const y = h - (Math.min(val, 300) / 300) * h;
+        if (i === 0) ctx.lineTo(0, y);
+        else ctx.lineTo(i * step, y);
+      });
+      ctx.lineTo((this.perfData.clones.length - 1) * step, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Stroke on top
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       this.perfData.clones.forEach((val, i) => {
         const y = h - (Math.min(val, 300) / 300) * h;
@@ -1568,7 +1662,7 @@ class TurboDevExtension {
           this._showToast('Copied to Clipboard!');
         })
         .catch(err => {
-          this._showToast('Copy Failed!', 2000);
+          this._showToast('Writing to the clipboard is not allowed', 2000);
         });
     };
     content.appendChild(copyBtn);
@@ -1644,14 +1738,18 @@ class TurboDevExtension {
       const text = lines.join('\n');
       const blob = new Blob([text], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `turbodev-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      this._showToast('Logs Exported!');
+      const filename = `turbodev-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+
+      Scratch.download(url, filename)
+        .then(() => {
+          this._showToast('Logs Exported!');
+          URL.revokeObjectURL(url);
+        })
+        .catch(e => {
+          this._showToast('Export Failed!');
+          this._addLine(`@c #e74c3c:Export failed: ${e.message || e}@c`);
+          URL.revokeObjectURL(url);
+        });
     } catch (e) {
       this._showToast('Export Failed!');
       this._addLine(`@c #e74c3c:Export failed: ${e.message}@c`);
@@ -2278,6 +2376,10 @@ class TurboDevExtension {
   }
 
   // --- Block Implementations ---
+
+  runCommand(args) {
+    this._handleCommand(String(args.COMMAND));
+  }
 
   // Implements Ask and Wait Pattern
   queryUser(args) {
