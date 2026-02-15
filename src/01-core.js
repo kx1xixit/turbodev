@@ -741,6 +741,9 @@ class TurboDevExtension {
     this.pendingQuery = null;
     this.userAnswer = '';
 
+    // Hybrid Trigger for Hat Block
+    this._triggerHat = false;
+
     this.indentLevel = 0;
     this.loaderStack = [];
     this.ASCII_FRAMES = ['|', '/', '-', '\\'];
@@ -759,6 +762,7 @@ class TurboDevExtension {
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
     this.queryUser = this.queryUser.bind(this);
+    this.runCommand = this.runCommand.bind(this);
     // REMOVED: this.whenCommandReceived = this.whenCommandReceived.bind(this);
     // ^ Event blocks must not have a bound function or they conflict with Scratch runtime.
 
@@ -852,6 +856,17 @@ class TurboDevExtension {
           opcode: 'clearTerminal',
           blockType: Scratch.BlockType.COMMAND,
           text: 'clear terminal',
+        },
+        {
+          opcode: 'runCommand',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'run command [COMMAND]',
+          arguments: {
+            COMMAND: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: 'help',
+            },
+          },
         },
         '---',
         {
@@ -2361,6 +2376,10 @@ class TurboDevExtension {
   }
 
   // --- Block Implementations ---
+
+  runCommand(args) {
+    this._handleCommand(String(args.COMMAND));
+  }
 
   // Implements Ask and Wait Pattern
   queryUser(args) {
