@@ -1613,7 +1613,11 @@ class TurboDevExtension {
   }
 
   _setTheme(themeName) {
-    this.container.classList.remove('ext_kx1xixit_turbodev-theme-matrix', 'ext_kx1xixit_turbodev-theme-ocean', 'ext_kx1xixit_turbodev-theme-retro');
+    this.container.classList.remove(
+      'ext_kx1xixit_turbodev-theme-matrix',
+      'ext_kx1xixit_turbodev-theme-ocean',
+      'ext_kx1xixit_turbodev-theme-retro'
+    );
     if (themeName !== 'standard') {
       this.container.classList.add(`ext_kx1xixit_turbodev-theme-${themeName}`);
     }
@@ -2002,7 +2006,10 @@ class TurboDevExtension {
           this._addLine(`@c #e74c3c:Invalid input. Expected ${type}.@c`);
           // Shake Effect
           this.inputField.classList.add('ext_kx1xixit_turbodev-input-shake');
-          setTimeout(() => this.inputField.classList.remove('ext_kx1xixit_turbodev-input-shake'), 300);
+          setTimeout(
+            () => this.inputField.classList.remove('ext_kx1xixit_turbodev-input-shake'),
+            300
+          );
         }
         return;
       }
@@ -2179,7 +2186,8 @@ class TurboDevExtension {
   startLoading(args) {
     const text = String(args.TEXT);
     const line = document.createElement('div');
-    line.className = 'ext_kx1xixit_turbodev-terminal-line ext_kx1xixit_turbodev-term-system ext_kx1xixit_turbodev-loader-sticky';
+    line.className =
+      'ext_kx1xixit_turbodev-terminal-line ext_kx1xixit_turbodev-term-system ext_kx1xixit_turbodev-loader-sticky';
 
     // Apply indentation
     line.style.paddingLeft = `${this.indentLevel * 24}px`;
@@ -2374,7 +2382,8 @@ class TurboDevExtension {
     this.isVisible = true;
     this.container.style.animation = 'none';
     this.container.offsetHeight;
-    this.container.style.animation = 'ext_kx1xixit_turbodevTermSlideIn 0.25s cubic-bezier(0.19, 1, 0.22, 1)';
+    this.container.style.animation =
+      'ext_kx1xixit_turbodevTermSlideIn 0.25s cubic-bezier(0.19, 1, 0.22, 1)';
 
     // Resume perf loop if mode is active
     if (this.isPerfMode) this._startPerfLoop();
