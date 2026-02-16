@@ -2621,9 +2621,9 @@ class TurboDevExtension {
           );
         } else {
           // Warn user but still allow hat blocks to handle it
-          this._addLine(  
-            `@c #e67e22:Unknown command '${commandName}'. No similar commands found.@c`  
-          ); 
+          this._addLine(
+            `@c #e67e22:Unknown command '${commandName}'. No similar commands found.@c`
+          );
         }
       }
 
