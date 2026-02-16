@@ -1525,39 +1525,48 @@ class TurboDevExtension {
     // Check for alias or command
     const realCmd = this.aliases.has(cmdName) ? this.aliases.get(cmdName) : cmdName;
     const cmdData = this.registeredCommands.get(realCmd);
+  _updateHint() {
+    const val = this.inputField.value.trim();
+    const inputArea = this.inputField.closest('.ext_kxTurboDev-terminal-input-area');
+
+    if (!val) {
+      this.hintLabel.classList.remove('visible');
+      if (inputArea) inputArea.classList.remove('valid-cmd');
+      return;
+    }
+
+    const parts = val.split(' ');
+    const cmdName = parts[0];
+
+    // Check for alias or command
+    const realCmd = this.aliases.has(cmdName) ? this.aliases.get(cmdName) : cmdName;
+    const cmdData = this.registeredCommands.get(realCmd);
 
     if (cmdData) {
       if (inputArea) inputArea.classList.add('valid-cmd');
-      // Clear previous hint content safely
-      this.hintLabel.textContent = '';
-
-      // Create "Usage: <cmd>" element
-      const usageSpan = document.createElement('span');
-      usageSpan.className = 'ext_kxTurboDev-hint-cmd';
-      usageSpan.textContent = `Usage: ${realCmd}`;
-      this.hintLabel.appendChild(usageSpan);
-
-      // Append argument hints, if any
+      this.hintLabel.replaceChildren();
+      const cmdSpan = document.createElement('span');
+      cmdSpan.className = 'ext_kxTurboDev-hint-cmd';
+      cmdSpan.textContent = `Usage: ${realCmd}`;
+      this.hintLabel.appendChild(cmdSpan);
       if (cmdData.args && cmdData.args.length > 0) {
         cmdData.args.forEach(arg => {
-          const bracket = arg.optional ? ['[', ']'] : ['<', '>'];
-          const cls = arg.optional ? 'ext_kxTurboDev-hint-arg' : 'ext_kxTurboDev-hint-arg required';
-
           const argSpan = document.createElement('span');
-          argSpan.className = cls;
-          argSpan.textContent = `${bracket[0]}${arg.name}:${arg.type}${bracket[1]}`;
-
-          // Add a space before each argument span to mimic the original layout
-          this.hintLabel.appendChild(document.createTextNode(' '));
+          argSpan.className = arg.optional
+            ? 'ext_kxTurboDev-hint-arg'
+            : 'ext_kxTurboDev-hint-arg required';
+          const open = arg.optional ? '[' : '<';
+          const close = arg.optional ? ']' : '>';
+          argSpan.textContent = `${open}${arg.name}:${arg.type}${close}`;
           this.hintLabel.appendChild(argSpan);
         });
       }
-
       this.hintLabel.classList.add('visible');
     } else {
       if (inputArea) inputArea.classList.remove('valid-cmd');
       this.hintLabel.classList.remove('visible');
     }
+  }
   }
 
   _applySystemSettings() {
