@@ -54,10 +54,15 @@ const STYLES = `
   
       /* Animation Keyframes */
       @keyframes ext_kxTurboDevTermSlideIn {
-          0% { opacity: 0; transform: translateY(10px) scale(0.98); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
+          0% { opacity: 0; transform: translateY(15px) scale(0.96); filter: blur(2px); }
+          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
       }
       
+      @keyframes ext_kxTurboDevLineIn {
+          0% { opacity: 0; transform: translateX(-10px); }
+          100% { opacity: 1; transform: translateX(0); }
+      }
+
       @keyframes ext_kxTurboDevShake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
@@ -74,6 +79,10 @@ const STYLES = `
           min-height: 200px;
           
           background: var(--ext_kxTurboDev-term-bg);
+          /* Scanline effect */
+          background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+          background-size: 100% 2px, 3px 100%;
+
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
           
@@ -92,7 +101,7 @@ const STYLES = `
           resize: both;
           overflow: hidden;
           
-          animation: ext_kxTurboDevTermSlideIn 0.25s cubic-bezier(0.19, 1, 0.22, 1);
+          animation: ext_kxTurboDevTermSlideIn 0.3s cubic-bezier(0.19, 1, 0.22, 1);
           transition: opacity 0.2s, background-color 0.2s, height 0.2s; 
       }
   
@@ -107,7 +116,8 @@ const STYLES = `
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-terminal-input-area,
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-settings-panel,
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-scroll-btn,
-      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-performance-panel {
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-performance-panel,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized .ext_kxTurboDev-hint-bar {
           display: none !important;
       }
       
@@ -280,15 +290,79 @@ const STYLES = `
       }
   
       .ext_kxTurboDev-terminal-line {
-          margin-bottom: 1px; /* Reduced Spacing */
+          margin-bottom: 2px;
           word-wrap: break-word;
           white-space: pre-wrap;
-          line-height: 1.25; /* Tighter line height */
-          transition: padding-left 0.2s ease;
+          line-height: 1.35;
           display: flex;
-          align-items: center; /* Center boxes, offset used for visual alignment */
+          align-items: center;
+          /* Entry Animation */
+          animation: ext_kxTurboDevLineIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
       }
       
+      /* Help Grid Styles */
+      .ext_kxTurboDev-help-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 12px;
+          padding: 10px 0;
+          margin-bottom: 10px;
+          animation: ext_kxTurboDevLineIn 0.3s ease forwards;
+      }
+
+      .ext_kxTurboDev-help-card {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid var(--ext_kxTurboDev-term-border);
+          border-radius: 8px;
+          padding: 12px;
+          transition: all 0.2s;
+          cursor: default;
+      }
+      .ext_kxTurboDev-help-card:hover {
+          background: rgba(255,255,255,0.08);
+          transform: translateY(-2px);
+          border-color: var(--ext_kxTurboDev-term-accent);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      }
+      .ext_kxTurboDev-cmd-name {
+          color: var(--ext_kxTurboDev-term-accent);
+          font-weight: 800;
+          font-size: 14px;
+          margin-bottom: 6px;
+          display: block;
+          letter-spacing: 0.5px;
+      }
+      .ext_kxTurboDev-cmd-desc {
+          color: var(--ext_kxTurboDev-term-text);
+          font-size: 12px;
+          opacity: 0.7;
+          margin-bottom: 10px;
+          display: block;
+          line-height: 1.3;
+          font-style: italic;
+      }
+      .ext_kxTurboDev-cmd-args {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: auto;
+      }
+      .ext_kxTurboDev-arg-badge {
+          font-size: 10px;
+          padding: 3px 8px;
+          border-radius: 4px;
+          background: rgba(0,0,0,0.4);
+          border: 1px solid var(--ext_kxTurboDev-term-border);
+          color: #999;
+          font-family: monospace;
+          letter-spacing: 0.5px;
+      }
+      .ext_kxTurboDev-arg-badge.required {
+          border-color: rgba(230, 126, 34, 0.5);
+          color: #e67e22;
+          background: rgba(230, 126, 34, 0.1);
+      }
+
       /* Highlighted Log Tags */
       .ext_kxTurboDev-log-tag {
           font-weight: 700;
@@ -343,8 +417,40 @@ const STYLES = `
           border-top: 1px solid var(--ext_kxTurboDev-term-border);
           align-items: center;
           flex-shrink: 0;
+          position: relative; /* For Hint Bar absolute positioning */
+          transition: box-shadow 0.2s ease;
+      }
+      /* Input Glow on Valid Command */
+      .ext_kxTurboDev-terminal-input-area.valid-cmd {
+          box-shadow: inset 0 -2px 0 var(--ext_kxTurboDev-term-accent);
       }
       
+      /* Hint Bar for Autocomplete/Syntax */
+      .ext_kxTurboDev-hint-bar {
+          position: absolute;
+          bottom: 100%;
+          left: 0;
+          right: 0;
+          background: rgba(0,0,0,0.8);
+          border-top: 1px solid var(--ext_kxTurboDev-term-border);
+          padding: 4px 16px;
+          font-size: 11px;
+          color: var(--ext_kxTurboDev-term-text);
+          opacity: 0;
+          pointer-events: none;
+          transform: translateY(5px);
+          transition: all 0.2s ease;
+          display: flex;
+          gap: 10px;
+      }
+      .ext_kxTurboDev-hint-bar.visible {
+          opacity: 1;
+          transform: translateY(0);
+      }
+      .ext_kxTurboDev-hint-cmd { color: var(--ext_kxTurboDev-term-accent); font-weight: bold; }
+      .ext_kxTurboDev-hint-arg { color: #7f8c8d; }
+      .ext_kxTurboDev-hint-arg.required { color: #e67e22; }
+
       /* Shake Animation Class */
       .ext_kxTurboDev-input-shake {
           animation: ext_kxTurboDevShake 0.3s ease-in-out;
@@ -682,6 +788,7 @@ class TurboDevExtension {
     this.outputContainer = null;
     this.perfContainer = null;
     this.inputField = null;
+    this.hintLabel = null; // New UI Element
     this.settingsPanel = null;
     this.scrollBtn = null;
     this.settingsBtn = null;
@@ -693,12 +800,17 @@ class TurboDevExtension {
     this.isAutoScrolling = true;
     this.isPerfMode = false;
 
+    // Command State
     this.lastCommand = '';
     this.commandHistory = [];
     this.historyIndex = -1;
+    this.currentCommandName = ''; // For introspection
+    this.currentCommandArgs = []; // For introspection
+
+    // Loop IDs
     this.cliReqId = null;
     this.scrollReqId = null;
-    this.perfReqId = null; // Safety: Single RAF ID for perf loop
+    this.perfReqId = null;
 
     // Performance Data
     this.perfData = {
@@ -722,20 +834,34 @@ class TurboDevExtension {
 
     this.prevRect = null;
     this.customSettings = new Map();
+    this.aliases = new Map(); // Store aliases
+
+    // Default Aliases
+    this.aliases.set('cls', 'clear');
+    this.aliases.set('?', 'help');
+    this.aliases.set('man', 'help');
 
     // Locking State
     this.lockedSettings = new Set();
     this.isSettingsMenuLocked = false;
 
+    // Command Registry: Key = Name, Value = { desc: string, args: [] }
     this.registeredCommands = new Map();
-    this.registeredCommands.set('help', 'Lists all available commands');
-    this.registeredCommands.set('clear', 'Clears the terminal output');
-    this.registeredCommands.set('sysinfo', 'Displays system statistics');
-    this.registeredCommands.set('history', 'Shows command history');
-    this.registeredCommands.set('echo', 'Prints text back to console');
-    this.registeredCommands.set('theme', 'Sets theme (standard/matrix/ocean/retro)');
-    this.registeredCommands.set('listvars', 'Lists global variables');
-    this.registeredCommands.set('listsprites', 'Lists sprites and clones');
+    // Pre-populate built-ins (args array matches format: { name, type, optional })
+    this._registerBuiltIn('help', 'Lists available commands or detailed help', [
+      { name: 'command', type: 'string', optional: true },
+    ]);
+    this._registerBuiltIn('clear', 'Clears the terminal output');
+    this._registerBuiltIn('sysinfo', 'Displays system statistics');
+    this._registerBuiltIn('history', 'Shows command history');
+    this._registerBuiltIn('echo', 'Prints text back to console', [
+      { name: 'text', type: 'string', optional: false },
+    ]);
+    this._registerBuiltIn('theme', 'Sets theme', [
+      { name: 'name', type: 'string', optional: false },
+    ]);
+    this._registerBuiltIn('listvars', 'Lists global variables');
+    this._registerBuiltIn('listsprites', 'Lists sprites and clones');
 
     // Query state
     this.pendingQuery = null;
@@ -763,8 +889,10 @@ class TurboDevExtension {
     this.getSettingValue = this.getSettingValue.bind(this);
     this.queryUser = this.queryUser.bind(this);
     this.runCommand = this.runCommand.bind(this);
-    // REMOVED: this.whenCommandReceived = this.whenCommandReceived.bind(this);
-    // ^ Event blocks must not have a bound function or they conflict with Scratch runtime.
+    this.replySuccess = this.replySuccess.bind(this);
+    this.replyError = this.replyError.bind(this);
+    this.getArgumentCount = this.getArgumentCount.bind(this);
+    this.whenSpecificCommandReceived = this.whenSpecificCommandReceived.bind(this);
 
     this._loadSettings();
     this._createUI();
@@ -781,6 +909,34 @@ class TurboDevExtension {
     Scratch.vm.runtime.ext_kxTurboDev = this;
     Scratch.vm.runtime.__TurboDev = this; // Explicit request
     window.__TurboDev = this; // Maintain existing behavior
+  }
+
+  _registerBuiltIn(name, desc, args = []) {
+    this.registeredCommands.set(name, {
+      desc: desc,
+      args: args,
+    });
+  }
+
+  // Calculate Levenshtein Distance for fuzzy matching
+  _levenshtein(a, b) {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) == a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    return matrix[b.length][a.length];
   }
 
   dispose() {
@@ -886,6 +1042,44 @@ class TurboDevExtension {
           opcode: 'getAnswer',
           blockType: Scratch.BlockType.REPORTER,
           text: 'last answer',
+        },
+        '---',
+        {
+          opcode: 'registerCommand',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register command [NAME] description [DESC]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Spawns an enemy' },
+          },
+        },
+        {
+          opcode: 'registerCommandArg',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define argument [NAME] for [CMD] type [TYPE] is required? [REQ]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
+            CMD: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
+            REQ: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+          },
+        },
+        {
+          opcode: 'whenCommandReceived',
+          blockType: Scratch.BlockType.EVENT,
+          text: 'when any command received',
+          isEdgeActivated: false,
+        },
+        {
+          opcode: 'whenSpecificCommandReceived',
+          blockType: Scratch.BlockType.HAT,
+          text: 'when command [CMD] received',
+          arguments: {
+            CMD: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: 'spawn',
+            },
+          },
         },
         '---',
         {
@@ -1008,32 +1202,38 @@ class TurboDevExtension {
         },
         '---',
         {
-          opcode: 'registerCommand',
+          opcode: 'replySuccess',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'register command [NAME] description [DESC]',
+          text: 'reply with success [MSG]',
           arguments: {
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
-            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Spawns an enemy' },
+            MSG: { type: Scratch.ArgumentType.STRING, defaultValue: 'Done!' },
           },
         },
         {
-          opcode: 'whenCommandReceived',
-          blockType: Scratch.BlockType.EVENT,
-          text: 'when command received',
-          isEdgeActivated: false, // REQUIRED boilerplate for Event blocks
+          opcode: 'replyError',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'reply with error [MSG]',
+          arguments: {
+            MSG: { type: Scratch.ArgumentType.STRING, defaultValue: 'Invalid arg!' },
+          },
         },
         {
           opcode: 'getLastCommand',
           blockType: Scratch.BlockType.REPORTER,
-          text: 'last command',
+          text: 'last command name',
         },
         {
           opcode: 'getCommandArg',
           blockType: Scratch.BlockType.REPORTER,
-          text: 'argument [INDEX] of last command',
+          text: 'argument [INDEX] of command',
           arguments: {
             INDEX: { type: Scratch.ArgumentType.NUMBER, defaultValue: 1 },
           },
+        },
+        {
+          opcode: 'getArgumentCount',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'number of arguments',
         },
         {
           opcode: 'isTerminalOpen',
@@ -1053,6 +1253,10 @@ class TurboDevExtension {
         SYSTEM_SETTINGS: {
           acceptReporters: true,
           items: ['fontSize', 'opacity', 'cliMode', 'showTimestamps', 'theme'],
+        },
+        ARG_TYPES: {
+          acceptReporters: true,
+          items: ['string', 'number', 'boolean'],
         },
       },
     };
@@ -1215,6 +1419,11 @@ class TurboDevExtension {
     const inputArea = document.createElement('div');
     inputArea.className = 'ext_kxTurboDev-terminal-input-area';
 
+    // Hint Bar
+    this.hintLabel = document.createElement('div');
+    this.hintLabel.className = 'ext_kxTurboDev-hint-bar';
+    inputArea.appendChild(this.hintLabel);
+
     this.promptLabel = document.createElement('span');
     this.promptLabel.className = 'ext_kxTurboDev-terminal-prompt';
     this.promptLabel.textContent = '>';
@@ -1242,10 +1451,16 @@ class TurboDevExtension {
     // Event Listeners
     this._makeDraggable(header);
 
+    // Real-time input handling for hints
+    this.inputField.addEventListener('input', () => {
+      this._updateHint();
+    });
+
     this.inputField.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         this._handleCommand(this.inputField.value);
         this.inputField.value = '';
+        this._updateHint(); // Clear hint
       } else if (e.key === 'Tab') {
         e.preventDefault();
         this._handleTabCompletion();
@@ -1255,6 +1470,7 @@ class TurboDevExtension {
           this.historyIndex++;
           const idx = this.commandHistory.length - 1 - this.historyIndex;
           this.inputField.value = this.commandHistory[idx];
+          this._updateHint();
         }
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -1262,9 +1478,11 @@ class TurboDevExtension {
           this.historyIndex--;
           const idx = this.commandHistory.length - 1 - this.historyIndex;
           this.inputField.value = this.commandHistory[idx];
+          this._updateHint();
         } else if (this.historyIndex === 0) {
           this.historyIndex = -1;
           this.inputField.value = '';
+          this._updateHint();
         }
       }
     });
@@ -1289,6 +1507,41 @@ class TurboDevExtension {
         }
       }
     });
+  }
+
+  _updateHint() {
+    const val = this.inputField.value.trim();
+    const inputArea = this.inputField.closest('.ext_kxTurboDev-terminal-input-area');
+
+    if (!val) {
+      this.hintLabel.classList.remove('visible');
+      if (inputArea) inputArea.classList.remove('valid-cmd');
+      return;
+    }
+
+    const parts = val.split(' ');
+    const cmdName = parts[0];
+
+    // Check for alias or command
+    const realCmd = this.aliases.has(cmdName) ? this.aliases.get(cmdName) : cmdName;
+    const cmdData = this.registeredCommands.get(realCmd);
+
+    if (cmdData) {
+      if (inputArea) inputArea.classList.add('valid-cmd');
+      let html = `<span class="ext_kxTurboDev-hint-cmd">Usage: ${realCmd}</span>`;
+      if (cmdData.args && cmdData.args.length > 0) {
+        cmdData.args.forEach(arg => {
+          const bracket = arg.optional ? ['[', ']'] : ['&lt;', '&gt;'];
+          const cls = arg.optional ? 'ext_kxTurboDev-hint-arg' : 'ext_kxTurboDev-hint-arg required';
+          html += ` <span class="${cls}">${bracket[0]}${arg.name}:${arg.type}${bracket[1]}</span>`;
+        });
+      }
+      this.hintLabel.innerHTML = html;
+      this.hintLabel.classList.add('visible');
+    } else {
+      if (inputArea) inputArea.classList.remove('valid-cmd');
+      this.hintLabel.classList.remove('visible');
+    }
   }
 
   _applySystemSettings() {
@@ -1550,6 +1803,7 @@ class TurboDevExtension {
     );
     if (matches.length === 1) {
       this.inputField.value = matches[0] + ' ';
+      this._updateHint();
     } else if (matches.length > 1) {
       this._addLine(`@c #7f8c8d:Possible commands: ${matches.join(', ')}@c`);
     }
@@ -2053,6 +2307,65 @@ class TurboDevExtension {
     });
   }
 
+  _parseCommandArgs(input) {
+    // Regex for handling spaces inside quotes
+    const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g;
+    const args = [];
+    let match;
+    while ((match = regex.exec(input)) !== null) {
+      // match[1] is double quotes content, match[2] is single quotes content
+      // match[0] is the unquoted token
+      args.push(match[1] || match[2] || match[0]);
+    }
+    return args;
+  }
+
+  _validateArguments(cmdName, args) {
+    // Check alias resolution first just in case, though _handleCommand does it
+    const realCmd = this.aliases.has(cmdName) ? this.aliases.get(cmdName) : cmdName;
+    const cmdData = this.registeredCommands.get(realCmd);
+    if (!cmdData || !cmdData.args || cmdData.args.length === 0) return true;
+
+    const definedArgs = cmdData.args;
+
+    // Check required arguments
+    for (let i = 0; i < definedArgs.length; i++) {
+      const def = definedArgs[i];
+      const val = args[i];
+
+      // Check presence
+      if (val === undefined || val === '') {
+        if (!def.optional) {
+          this._addLine(
+            `@c #e74c3c:Error: Missing required argument '${def.name}' (${def.type})@c`
+          );
+          return false;
+        }
+        continue; // Skip type check for optional missing args
+      }
+
+      // Check Type
+      if (def.type === 'number') {
+        if (isNaN(parseFloat(val)) || !isFinite(val)) {
+          this._addLine(`@c #e74c3c:Error: Argument '${def.name}' expects number, got '${val}'@c`);
+          return false;
+        }
+      } else if (def.type === 'boolean') {
+        const low = val.toLowerCase();
+        if (!['true', 'false', 't', 'f', 'yes', 'no'].includes(low)) {
+          this._addLine(`@c #e74c3c:Error: Argument '${def.name}' expects boolean, got '${val}'@c`);
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  _addNode(node) {
+    this.outputContainer.appendChild(node);
+    this._scrollToBottom();
+  }
+
   _handleCommand(text) {
     // Hard Limit on Input Length
     if (text.length > 512) {
@@ -2062,7 +2375,11 @@ class TurboDevExtension {
 
     if (!text.trim()) return;
     const cleanText = text.trim();
-    const commandName = cleanText.split(' ')[0];
+
+    // Parse arguments using new Regex parser
+    const parsedArgs = this._parseCommandArgs(cleanText);
+    let commandName = parsedArgs[0]; // Mutable for alias
+    const args = parsedArgs.slice(1);
 
     try {
       // If we are pending a query, capture this input
@@ -2125,18 +2442,91 @@ class TurboDevExtension {
       this._addLine(`@c #9b59b6:${this.promptLabel.textContent} ${text}@c`);
 
       // Store History
-      this.lastCommand = text;
       this.commandHistory.push(text);
-      // Cap history
       if (this.commandHistory.length > this.MAX_HISTORY) this.commandHistory.shift();
       this.historyIndex = -1;
 
+      // --- ALIAS RESOLUTION ---
+      if (this.aliases.has(commandName)) {
+        commandName = this.aliases.get(commandName);
+      }
+
+      this.lastCommand = commandName;
+      this.currentCommandName = commandName;
+      this.currentCommandArgs = args;
+
+      // --- ARGUMENT VALIDATION ---
+      if (!this._validateArguments(commandName, args)) {
+        this.inputField.classList.add('ext_kxTurboDev-input-shake');
+        setTimeout(() => this.inputField.classList.remove('ext_kxTurboDev-input-shake'), 300);
+        return; // STOP execution
+      }
+
       // Internal Command Handling
       if (commandName === 'help') {
-        this._addLine('@c #7f8c8d:--- Registered Commands ---@c');
-        this.registeredCommands.forEach((desc, name) => {
-          this._addLine(`@c #7f8c8d:${name.padEnd(12)} : ${desc}@c`);
+        const filter = args[0];
+
+        // Detailed Help
+        if (filter) {
+          const realCmd = this.aliases.has(filter) ? this.aliases.get(filter) : filter;
+          const data = this.registeredCommands.get(realCmd);
+
+          if (data) {
+            this._addLine(`@c #7f8c8d:--- Help: ${realCmd} ---@c`);
+            this._addLine(`@c #e4e4e4:${data.desc}@c`);
+            if (data.args && data.args.length > 0) {
+              this._addLine(`@c #3498db:Arguments:@c`);
+              data.args.forEach(a => {
+                this._addLine(
+                  `  @c #94a3b8:${a.name}@c (@c #e67e22:${a.type}@c)${a.optional ? ' (optional)' : ''}`
+                );
+              });
+            } else {
+              this._addLine(`@c #7f8c8d:No arguments required.@c`);
+            }
+          } else {
+            this._addLine(`@c #e74c3c:Command '${filter}' not found.@c`);
+          }
+          return;
+        }
+
+        // List All
+        this._addLine('@c #7f8c8d:--- Command Reference ---@c');
+        const grid = document.createElement('div');
+        grid.className = 'ext_kxTurboDev-help-container';
+
+        // Add Aliases to display or filter? For now, just primary commands
+        this.registeredCommands.forEach((data, name) => {
+          const card = document.createElement('div');
+          card.className = 'ext_kxTurboDev-help-card';
+
+          const title = document.createElement('span');
+          title.className = 'ext_kxTurboDev-cmd-name';
+          title.textContent = name;
+
+          const desc = document.createElement('span');
+          desc.className = 'ext_kxTurboDev-cmd-desc';
+          desc.textContent = data.desc;
+
+          const argsDiv = document.createElement('div');
+          argsDiv.className = 'ext_kxTurboDev-cmd-args';
+
+          if (data.args) {
+            data.args.forEach(arg => {
+              const badge = document.createElement('span');
+              badge.className = `ext_kxTurboDev-arg-badge ${arg.optional ? '' : 'required'}`;
+              badge.textContent = arg.name + (arg.optional ? '?' : '');
+              argsDiv.appendChild(badge);
+            });
+          }
+
+          card.appendChild(title);
+          card.appendChild(desc);
+          card.appendChild(argsDiv);
+          grid.appendChild(card);
         });
+
+        this._addNode(grid);
         return;
       }
 
@@ -2153,13 +2543,13 @@ class TurboDevExtension {
       }
 
       if (commandName === 'echo') {
-        const msg = cleanText.substring(5);
-        this._addLine(msg);
+        // Echo args joined by space
+        this._addLine(args.join(' '));
         return;
       }
 
       if (commandName === 'theme') {
-        const newTheme = cleanText.substring(6).trim();
+        const newTheme = args[0] ? args[0].toLowerCase() : '';
         if (['standard', 'matrix', 'ocean', 'retro'].includes(newTheme)) {
           this._setTheme(newTheme);
           this._saveSettings(); // Persist theme change
@@ -2182,15 +2572,19 @@ class TurboDevExtension {
       // New Dev Commands
       if (commandName === 'listvars') {
         this._addLine('@c #7f8c8d:--- Global Variables ---@c');
-        const stage = vm.runtime.getTargetForStage();
-        if (stage && stage.variables) {
-          for (const id in stage.variables) {
-            const v = stage.variables[id];
-            if (v.type === '') {
-              // Standard var
-              this._addLine(`@c #7f8c8d:${v.name}: ${v.value}@c`);
+        try {
+          const stage = vm.runtime.getTargetForStage();
+          if (stage && stage.variables) {
+            for (const id in stage.variables) {
+              const v = stage.variables[id];
+              // Defensive check for v and v.value
+              if (v && v.type === '' && v.value !== undefined) {
+                this._addLine(`@c #7f8c8d:${v.name}: ${v.value}@c`);
+              }
             }
           }
+        } catch (e) {
+          this._addLine(`@c #e74c3c:Error listing vars: ${e.message}@c`);
         }
         return;
       }
@@ -2210,14 +2604,48 @@ class TurboDevExtension {
         return;
       }
 
+      // --- UNKNOWN COMMAND CHECK ---
+      if (!this.registeredCommands.has(commandName)) {
+        // Fuzzy Search Logic
+        let bestMatch = null;
+        let minDist = Infinity;
+        // Check both commands and aliases
+        const candidates = [...this.registeredCommands.keys(), ...this.aliases.keys()];
+
+        candidates.forEach(cand => {
+          const dist = this._levenshtein(commandName, cand);
+          if (dist < minDist) {
+            minDist = dist;
+            bestMatch = cand;
+          }
+        });
+
+        if (bestMatch && minDist <= 2) {
+          this._addLine(
+            `@c #e67e22:Unknown command '${commandName}'. Did you mean '${bestMatch}'?@c`
+          );
+        } else {
+          // Only trigger hats if we really don't know, but typically we want to warn
+          // But for compatibility with dynamic hats, we proceed with caution
+        }
+      }
+
       // Trigger Scratch Hat Block for custom logic
-      // We set a flag to ensure polling works if startHats fails to run the thread immediately
       this._triggerHat = true;
 
-      const hatOpcode = `${this.getInfo().id}_whenCommandReceived`;
-      console.log(`[TurboDev] Firing hat block: ${hatOpcode}`);
-      const threads = vm.runtime.startHats(hatOpcode);
-      console.log(`[TurboDev] Threads started: ${threads.length}`);
+      // 1. Generic Event (can remain Event or HAT, generic one worked as Event)
+      const genericHatOpcode = `${this.getInfo().id}_whenCommandReceived`;
+
+      // 2. Specific Event (Must be triggered generically without filter because it's a HAT block now)
+      const specificHatOpcode = `${this.getInfo().id}_whenSpecificCommandReceived`;
+
+      // Wrap startHats in try-catch to prevent runtime crash
+      try {
+        vm.runtime.startHats(genericHatOpcode);
+        vm.runtime.startHats(specificHatOpcode); // Trigger HAT check manually
+      } catch (e) {
+        console.warn('TurboDev Hat Error:', e);
+      }
 
       // Reset trigger after a short delay (single frame pulse)
       setTimeout(() => {
@@ -2407,15 +2835,34 @@ class TurboDevExtension {
 
   getCommandArg(args) {
     const index = parseInt(args.INDEX) || 0;
-    if (index < 0) return '';
-    const parts = this.lastCommand.trim().split(/\s+/);
-    if (index >= parts.length) return '';
-    return parts[index] || '';
+    if (index < 1 || index > this.currentCommandArgs.length) return '';
+    return this.currentCommandArgs[index - 1] || '';
+  }
+
+  getArgumentCount() {
+    return this.currentCommandArgs.length;
+  }
+
+  replySuccess(args) {
+    const msg = String(args.MSG);
+    this._addLine(`@c #2ecc71:[✔] ${msg}@c`);
+  }
+
+  replyError(args) {
+    const msg = String(args.MSG);
+    this._addLine(`@c #e74c3c:[✘] ${msg}@c`);
   }
 
   whenCommandReceived() {
     // Return the trigger state - effectively polling + event support
     return this._triggerHat;
+  }
+
+  whenSpecificCommandReceived(args) {
+    // Changed to HAT block logic: manual check inside function
+    if (!this._triggerHat) return false;
+    // Check if the command matches (case-insensitive)
+    return this.currentCommandName.toLowerCase() === String(args.CMD).toLowerCase();
   }
 
   registerCommand(args) {
@@ -2438,7 +2885,31 @@ class TurboDevExtension {
     }
 
     if (name) {
-      this.registeredCommands.set(name, desc);
+      if (this.registeredCommands.has(name)) {
+        // preserve args if re-registering just description
+        const existing = this.registeredCommands.get(name);
+        this.registeredCommands.set(name, { desc: desc, args: existing.args });
+      } else {
+        this.registeredCommands.set(name, { desc: desc, args: [] });
+      }
+    }
+  }
+
+  registerCommandArg(args) {
+    const cmd = String(args.CMD).trim();
+    if (!this.registeredCommands.has(cmd)) return;
+
+    const argData = {
+      name: String(args.NAME),
+      type: String(args.TYPE),
+      optional: args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
+    };
+
+    const entry = this.registeredCommands.get(cmd);
+    // Avoid duplicate args with same name
+    const exists = entry.args.find(a => a.name === argData.name);
+    if (!exists) {
+      entry.args.push(argData);
     }
   }
 
