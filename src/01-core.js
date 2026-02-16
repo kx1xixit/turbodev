@@ -1493,6 +1493,9 @@ class TurboDevExtension {
       // Only boost z-index if NOT in CLI mode to avoid covering modals
       if (!this.systemSettings.cliMode) {
         this.container.style.zIndex = '99999';
+      }
+    });
+
   _updateHint() {
     const val = this.inputField.value.trim();
     const inputArea = this.inputField.closest('.ext_kxTurboDev-terminal-input-area');
