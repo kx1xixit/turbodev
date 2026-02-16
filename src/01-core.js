@@ -1495,6 +1495,7 @@ class TurboDevExtension {
         this.container.style.zIndex = '99999';
       }
     });
+  }
 
   _updateHint() {
     const val = this.inputField.value.trim();
