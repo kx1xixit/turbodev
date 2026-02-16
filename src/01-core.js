@@ -1525,22 +1525,6 @@ class TurboDevExtension {
     // Check for alias or command
     const realCmd = this.aliases.has(cmdName) ? this.aliases.get(cmdName) : cmdName;
     const cmdData = this.registeredCommands.get(realCmd);
-  _updateHint() {
-    const val = this.inputField.value.trim();
-    const inputArea = this.inputField.closest('.ext_kxTurboDev-terminal-input-area');
-
-    if (!val) {
-      this.hintLabel.classList.remove('visible');
-      if (inputArea) inputArea.classList.remove('valid-cmd');
-      return;
-    }
-
-    const parts = val.split(' ');
-    const cmdName = parts[0];
-
-    // Check for alias or command
-    const realCmd = this.aliases.has(cmdName) ? this.aliases.get(cmdName) : cmdName;
-    const cmdData = this.registeredCommands.get(realCmd);
 
     if (cmdData) {
       if (inputArea) inputArea.classList.add('valid-cmd');
