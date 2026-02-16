@@ -1528,15 +1528,31 @@ class TurboDevExtension {
 
     if (cmdData) {
       if (inputArea) inputArea.classList.add('valid-cmd');
-      let html = `<span class="ext_kxTurboDev-hint-cmd">Usage: ${realCmd}</span>`;
+      // Clear previous hint content safely
+      this.hintLabel.textContent = '';
+
+      // Create "Usage: <cmd>" element
+      const usageSpan = document.createElement('span');
+      usageSpan.className = 'ext_kxTurboDev-hint-cmd';
+      usageSpan.textContent = `Usage: ${realCmd}`;
+      this.hintLabel.appendChild(usageSpan);
+
+      // Append argument hints, if any
       if (cmdData.args && cmdData.args.length > 0) {
         cmdData.args.forEach(arg => {
-          const bracket = arg.optional ? ['[', ']'] : ['&lt;', '&gt;'];
+          const bracket = arg.optional ? ['[', ']'] : ['<', '>'];
           const cls = arg.optional ? 'ext_kxTurboDev-hint-arg' : 'ext_kxTurboDev-hint-arg required';
-          html += ` <span class="${cls}">${bracket[0]}${arg.name}:${arg.type}${bracket[1]}</span>`;
+
+          const argSpan = document.createElement('span');
+          argSpan.className = cls;
+          argSpan.textContent = `${bracket[0]}${arg.name}:${arg.type}${bracket[1]}`;
+
+          // Add a space before each argument span to mimic the original layout
+          this.hintLabel.appendChild(document.createTextNode(' '));
+          this.hintLabel.appendChild(argSpan);
         });
       }
-      this.hintLabel.innerHTML = html;
+
       this.hintLabel.classList.add('visible');
     } else {
       if (inputArea) inputArea.classList.remove('valid-cmd');
