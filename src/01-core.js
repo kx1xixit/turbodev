@@ -2476,16 +2476,16 @@ class TurboDevExtension {
         commandName = this.aliases.get(commandName);
       }
 
-      this.lastCommand = commandName;
-      this.currentCommandName = commandName;
-      this.currentCommandArgs = args;
-
       // --- ARGUMENT VALIDATION ---
       if (!this._validateArguments(commandName, args)) {
         this.inputField.classList.add('ext_kxTurboDev-input-shake');
         setTimeout(() => this.inputField.classList.remove('ext_kxTurboDev-input-shake'), 300);
         return; // STOP execution
       }
+
+      this.lastCommand = commandName;
+      this.currentCommandName = commandName;
+      this.currentCommandArgs = args;
 
       // Internal Command Handling
       if (commandName === 'help') {
