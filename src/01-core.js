@@ -2616,8 +2616,10 @@ class TurboDevExtension {
             `@c #e67e22:Unknown command '${commandName}'. Did you mean '${bestMatch}'?@c`
           );
         } else {
-          // Only trigger hats if we really don't know, but typically we want to warn
-          // But for compatibility with dynamic hats, we proceed with caution
+          // Warn user but still allow hat blocks to handle it
+          this._addLine(  
+            `@c #e67e22:Unknown command '${commandName}'. No similar commands found.@c`  
+          ); 
         }
       }
 
