@@ -1493,22 +1493,6 @@ class TurboDevExtension {
       // Only boost z-index if NOT in CLI mode to avoid covering modals
       if (!this.systemSettings.cliMode) {
         this.container.style.zIndex = '99999';
-      }
-
-      if (this.settingsPanel.classList.contains('open') && this.settingsPanel.contains(e.target)) {
-        return;
-      }
-
-      // Only focus input if in normal mode
-      if (!this.isPerfMode) {
-        const sel = window.getSelection();
-        if (sel.toString().length === 0) {
-          this.inputField.focus();
-        }
-      }
-    });
-  }
-
   _updateHint() {
     const val = this.inputField.value.trim();
     const inputArea = this.inputField.closest('.ext_kxTurboDev-terminal-input-area');
@@ -1551,8 +1535,6 @@ class TurboDevExtension {
       this.hintLabel.classList.remove('visible');
     }
   }
-  }
-
   _applySystemSettings() {
     this._setTheme(this.systemSettings.theme);
     if (this.systemSettings.cliMode) {
