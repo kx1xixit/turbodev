@@ -867,6 +867,9 @@ class TurboDevExtension {
     this.pendingQuery = null;
     this.userAnswer = '';
 
+    // Command Bar state
+    this.commandBarEnabled = true;
+
     // Hybrid Trigger for Hat Block
     this._triggerHat = false;
 
@@ -1240,6 +1243,15 @@ class TurboDevExtension {
           blockType: Scratch.BlockType.BOOLEAN,
           text: 'is terminal open?',
         },
+        '---',
+        {
+          opcode: 'setCommandBarEnabled',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set command bar enabled [ENABLED]',
+          arguments: {
+            ENABLED: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+          },
+        },
       ],
       menus: {
         LOADING_STATUS: {
@@ -1264,10 +1276,12 @@ class TurboDevExtension {
 
   _cancelPendingQuery() {
     if (this.pendingQuery && this.pendingQuery.resolve) {
+      const wasCommandBarDisabled = this.pendingQuery.wasCommandBarDisabled;
       this.pendingQuery.resolve(); // Resolve empty string/null to unblock stack
       this.pendingQuery = null;
       this.promptLabel.textContent = '>';
       this.inputField.classList.remove('ext_kxTurboDev-input-shake');
+      if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
     }
   }
 
@@ -2067,6 +2081,13 @@ class TurboDevExtension {
     }
   }
 
+  _setCommandBarEnabled(enabled) {
+    this.commandBarEnabled = enabled;
+    if (this.inputField) {
+      this.inputField.parentElement.style.display = enabled ? 'flex' : 'none';
+    }
+  }
+
   setSystemSetting(args) {
     const setting = args.SETTING;
     let val = args.VALUE;
@@ -2418,11 +2439,13 @@ class TurboDevExtension {
 
         if (isValid) {
           this.userAnswer = parsed;
+          const wasCommandBarDisabled = this.pendingQuery.wasCommandBarDisabled;
           if (this.pendingQuery.resolve) {
             this.pendingQuery.resolve();
           }
           this.pendingQuery = null;
           this.promptLabel.textContent = '>'; // Reset prompt
+          if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
         } else {
           this._addLine(`@c #e74c3c:Invalid input. Expected ${type}.@c`);
           // Shake Effect
@@ -2837,6 +2860,10 @@ class TurboDevExtension {
     // Show terminal if hidden
     if (!this.isVisible) this.showTerminal();
 
+    // Temporarily enable command bar for query if it was disabled
+    const wasCommandBarDisabled = !this.commandBarEnabled;
+    if (wasCommandBarDisabled) this._setCommandBarEnabled(true);
+
     this._addLine(`@c #e67e22:${prompt}@c`);
     this.promptLabel.textContent = '?'; // Visual cue
     this.inputField.focus(); // Focus input
@@ -2845,6 +2872,7 @@ class TurboDevExtension {
       this.pendingQuery = {
         type: type,
         resolve: resolve,
+        wasCommandBarDisabled: wasCommandBarDisabled,
       };
     });
   }
@@ -3048,6 +3076,11 @@ class TurboDevExtension {
 
   isTerminalOpen() {
     return this.isVisible;
+  }
+
+  setCommandBarEnabled(args) {
+    const enabled = args.ENABLED === true || String(args.ENABLED).toLowerCase() === 'true';
+    this._setCommandBarEnabled(enabled);
   }
 }
 
