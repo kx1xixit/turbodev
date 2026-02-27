@@ -70,7 +70,7 @@ const STYLES = `
       }
   
       .ext_kxTurboDev-terminal-wrapper {
-          position: fixed;
+          position: absolute;
           top: 40px;
           left: 40px;
           width: 550px;
@@ -2155,6 +2155,8 @@ class TurboDevExtension {
 
       // Start tracking loop - CANCEL FIRST to prevent duplication
       if (this.cliReqId) cancelAnimationFrame(this.cliReqId);
+      // Immediately sync to canvas to avoid one-frame misalignment before the rAF loop runs
+      this._syncContainerToCanvas();
       this.cliReqId = requestAnimationFrame(this._updateCliPosition.bind(this));
       window.addEventListener('scroll', this.boundCliScroll, { capture: true });
     } else {
@@ -2167,7 +2169,7 @@ class TurboDevExtension {
       }
       window.removeEventListener('scroll', this.boundCliScroll, { capture: true });
 
-      // Restore manual positioning
+      // Restore normal fixed positioning and saved manual geometry
       this.container.style.position = 'fixed';
       if (this.prevRect) {
         this.container.style.left = this.prevRect.left;
