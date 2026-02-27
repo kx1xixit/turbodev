@@ -2475,9 +2475,10 @@ class TurboDevExtension {
           }
           this.pendingQuery = null;
           this.promptLabel.textContent = '>'; // Reset prompt
-      if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
-      // Apply any deferred disable that occurred mid-query (pendingQuery is now null)
-      else if (!this.commandBarEnabled) this._setCommandBarEnabled(false);
+          if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
+          // Apply any deferred disable that occurred mid-query (pendingQuery is now null)
+          else if (!this.commandBarEnabled) this._setCommandBarEnabled(false);
+        } else {
         } else {
           this._addLine(`@c #e74c3c:Invalid input. Expected ${type}.@c`);
           // Shake Effect
