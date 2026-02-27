@@ -70,7 +70,7 @@ const STYLES = `
       }
   
       .ext_kxTurboDev-terminal-wrapper {
-          position: absolute;
+          position: fixed;
           top: 40px;
           left: 40px;
           width: 550px;
@@ -2156,7 +2156,7 @@ class TurboDevExtension {
       }
 
       // Restore manual positioning
-      this.container.style.position = 'absolute';
+      this.container.style.position = 'fixed';
       if (this.prevRect) {
         this.container.style.left = this.prevRect.left;
         this.container.style.top = this.prevRect.top;
