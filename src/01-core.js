@@ -827,6 +827,8 @@ class TurboDevExtension {
     this.historyIndex = -1;
     this.currentCommandName = ''; // For introspection
     this.currentCommandArgs = []; // For introspection
+    this.currentSubcommandName = ''; // For introspection
+    this.currentCommandFlags = {}; // For introspection
 
     // Loop IDs
     this.cliReqId = null;
@@ -917,6 +919,13 @@ class TurboDevExtension {
     this.replyError = this.replyError.bind(this);
     this.getArgumentCount = this.getArgumentCount.bind(this);
     this.whenSpecificCommandReceived = this.whenSpecificCommandReceived.bind(this);
+    this.registerSubcommand = this.registerSubcommand.bind(this);
+    this.registerSubcommandArg = this.registerSubcommandArg.bind(this);
+    this.whenSubcommandReceived = this.whenSubcommandReceived.bind(this);
+    this.getCurrentSubcommand = this.getCurrentSubcommand.bind(this);
+    this.getFlag = this.getFlag.bind(this);
+    this.hasFlag = this.hasFlag.bind(this);
+    this.getNamedArg = this.getNamedArg.bind(this);
 
     this._loadSettings();
     this._createUI();
@@ -939,6 +948,7 @@ class TurboDevExtension {
     this.registeredCommands.set(name, {
       desc: desc,
       args: args,
+      subcommands: new Map(),
     });
   }
 
@@ -1105,6 +1115,42 @@ class TurboDevExtension {
             },
           },
         },
+        {
+          opcode: 'registerSubcommand',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register subcommand [NAME] of [PARENT] description [DESC]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Spawns an enemy' },
+          },
+        },
+        {
+          opcode: 'registerSubcommandArg',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define argument [NAME] for subcommand [SUB] of [PARENT] type [TYPE] is required? [REQ]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
+            REQ: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+          },
+        },
+        {
+          opcode: 'whenSubcommandReceived',
+          blockType: Scratch.BlockType.HAT,
+          text: 'when subcommand [SUB] of [PARENT] received',
+          arguments: {
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+          },
+        },
+        {
+          opcode: 'getCurrentSubcommand',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'current subcommand',
+        },
         '---',
         {
           opcode: 'registerSettingToggle',
@@ -1258,6 +1304,30 @@ class TurboDevExtension {
           opcode: 'getArgumentCount',
           blockType: Scratch.BlockType.REPORTER,
           text: 'number of arguments',
+        },
+        {
+          opcode: 'getNamedArg',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'argument named [NAME] of command',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
+          },
+        },
+        {
+          opcode: 'getFlag',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'flag [NAME] value',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
+          },
+        },
+        {
+          opcode: 'hasFlag',
+          blockType: Scratch.BlockType.BOOLEAN,
+          text: 'has flag [NAME]?',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
+          },
         },
         {
           opcode: 'isTerminalOpen',
@@ -2366,13 +2436,48 @@ class TurboDevExtension {
     return args;
   }
 
-  _validateArguments(cmdName, args) {
+  _parseFlags(tokens) {
+    const positional = [];
+    const flags = {};
+    let i = 0;
+    while (i < tokens.length) {
+      const token = tokens[i];
+      if (token.startsWith('--')) {
+        const rawName = token.slice(2);
+        // Only accept valid flag names (letters, digits, hyphens; must start with letter/digit)
+        if (/^[a-zA-Z0-9][a-zA-Z0-9-]*$/.test(rawName)) {
+          const flagName = rawName.toLowerCase();
+          if (i + 1 < tokens.length && !tokens[i + 1].startsWith('--')) {
+            flags[flagName] = tokens[i + 1];
+            i += 2;
+          } else {
+            flags[flagName] = 'true'; // boolean flag
+            i++;
+          }
+        } else {
+          i++; // skip invalid or bare '--'
+        }
+      } else {
+        positional.push(token);
+        i++;
+      }
+    }
+    return { positional, flags };
+  }
+
+  _validateArguments(cmdName, args, subcommandName = '') {
     // Check alias resolution first just in case, though _handleCommand does it
     const realCmd = this.aliases.has(cmdName) ? this.aliases.get(cmdName) : cmdName;
     const cmdData = this.registeredCommands.get(realCmd);
-    if (!cmdData || !cmdData.args || cmdData.args.length === 0) return true;
+    if (!cmdData) return true;
 
-    const definedArgs = cmdData.args;
+    let definedArgs;
+    if (subcommandName && cmdData.subcommands && cmdData.subcommands.has(subcommandName)) {
+      definedArgs = cmdData.subcommands.get(subcommandName).args || [];
+    } else {
+      definedArgs = cmdData.args || [];
+    }
+    if (definedArgs.length === 0) return true;
 
     // Check required arguments
     for (let i = 0; i < definedArgs.length; i++) {
@@ -2501,8 +2606,23 @@ class TurboDevExtension {
         commandName = this.aliases.get(commandName);
       }
 
+      // --- SUBCOMMAND DETECTION ---
+      let subcommandName = '';
+      let remainingArgs = args;
+      const cmdEntry = this.registeredCommands.get(commandName);
+      if (cmdEntry && cmdEntry.subcommands && args.length > 0) {
+        const sub = args[0].toLowerCase();
+        if (cmdEntry.subcommands.has(sub)) {
+          subcommandName = sub;
+          remainingArgs = args.slice(1);
+        }
+      }
+
+      // --- FLAG PARSING ---
+      const { positional, flags } = this._parseFlags(remainingArgs);
+
       // --- ARGUMENT VALIDATION ---
-      if (!this._validateArguments(commandName, args)) {
+      if (!this._validateArguments(commandName, positional, subcommandName)) {
         this.inputField.classList.add('ext_kxTurboDev-input-shake');
         setTimeout(() => this.inputField.classList.remove('ext_kxTurboDev-input-shake'), 300);
         return; // STOP execution
@@ -2510,11 +2630,13 @@ class TurboDevExtension {
 
       this.lastCommand = commandName;
       this.currentCommandName = commandName;
-      this.currentCommandArgs = args;
+      this.currentSubcommandName = subcommandName;
+      this.currentCommandFlags = flags;
+      this.currentCommandArgs = positional;
 
       // Internal Command Handling
       if (commandName === 'help') {
-        const filter = args[0];
+        const filter = positional[0];
 
         // Detailed Help
         if (filter) {
@@ -2533,6 +2655,12 @@ class TurboDevExtension {
               });
             } else {
               this._addLine(`@c #7f8c8d:No arguments required.@c`);
+            }
+            if (data.subcommands && data.subcommands.size > 0) {
+              this._addLine(`@c #3498db:Subcommands:@c`);
+              data.subcommands.forEach((subData, subName) => {
+                this._addLine(`  @c #94a3b8:${subName}@c - ${subData.desc}`);
+              });
             }
           } else {
             this._addLine(`@c #e74c3c:Command '${filter}' not found.@c`);
@@ -2573,6 +2701,17 @@ class TurboDevExtension {
           card.appendChild(title);
           card.appendChild(desc);
           card.appendChild(argsDiv);
+          if (data.subcommands && data.subcommands.size > 0) {
+            const subDiv = document.createElement('div');
+            subDiv.className = 'ext_kxTurboDev-cmd-args';
+            data.subcommands.forEach((subData, subName) => {
+              const badge = document.createElement('span');
+              badge.className = 'ext_kxTurboDev-arg-badge';
+              badge.textContent = subName;
+              subDiv.appendChild(badge);
+            });
+            card.appendChild(subDiv);
+          }
           grid.appendChild(card);
         });
 
@@ -2594,12 +2733,12 @@ class TurboDevExtension {
 
       if (commandName === 'echo') {
         // Echo args joined by space
-        this._addLine(args.join(' '));
+        this._addLine(positional.join(' '));
         return;
       }
 
       if (commandName === 'theme') {
-        const newTheme = args[0] ? args[0].toLowerCase() : '';
+        const newTheme = positional[0] ? positional[0].toLowerCase() : '';
         if (['standard', 'matrix', 'ocean', 'retro'].includes(newTheme)) {
           this._setTheme(newTheme);
           this._saveSettings(); // Persist theme change
@@ -2691,10 +2830,14 @@ class TurboDevExtension {
       // 2. Specific Event (Must be triggered generically without filter because it's a HAT block now)
       const specificHatOpcode = `${this.getInfo().id}_whenSpecificCommandReceived`;
 
+      // 3. Subcommand Event
+      const subcommandHatOpcode = `${this.getInfo().id}_whenSubcommandReceived`;
+
       // Wrap startHats in try-catch to prevent runtime crash
       try {
         vm.runtime.startHats(genericHatOpcode);
         vm.runtime.startHats(specificHatOpcode); // Trigger HAT check manually
+        vm.runtime.startHats(subcommandHatOpcode); // Trigger subcommand HAT check
       } catch (e) {
         console.warn('TurboDev Hat Error:', e);
       }
@@ -2923,6 +3066,42 @@ class TurboDevExtension {
     return this.currentCommandArgs.length;
   }
 
+  getNamedArg(args) {
+    const name = String(args.NAME).trim().toLowerCase();
+    // Check flags first
+    if (Object.prototype.hasOwnProperty.call(this.currentCommandFlags, name)) {
+      return String(this.currentCommandFlags[name]);
+    }
+    // Fall back to positional arg by registered name
+    const cmdData = this.registeredCommands.get(this.currentCommandName);
+    if (!cmdData) return '';
+    let definedArgs;
+    if (
+      this.currentSubcommandName &&
+      cmdData.subcommands &&
+      cmdData.subcommands.has(this.currentSubcommandName)
+    ) {
+      definedArgs = cmdData.subcommands.get(this.currentSubcommandName).args || [];
+    } else {
+      definedArgs = cmdData.args || [];
+    }
+    const idx = definedArgs.findIndex(a => a.name.toLowerCase() === name);
+    if (idx === -1) return '';
+    return this.currentCommandArgs[idx] !== undefined ? String(this.currentCommandArgs[idx]) : '';
+  }
+
+  getFlag(args) {
+    const name = String(args.NAME).trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(this.currentCommandFlags, name)
+      ? String(this.currentCommandFlags[name])
+      : '';
+  }
+
+  hasFlag(args) {
+    const name = String(args.NAME).trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(this.currentCommandFlags, name);
+  }
+
   replySuccess(args) {
     const msg = String(args.MSG);
     this._addLine(`@c #2ecc71:[✔] ${msg}@c`);
@@ -2943,6 +3122,20 @@ class TurboDevExtension {
     if (!this._triggerHat) return false;
     // Check if the command matches (case-insensitive)
     return this.currentCommandName.toLowerCase() === String(args.CMD).toLowerCase();
+  }
+
+  whenSubcommandReceived(args) {
+    if (!this._triggerHat) return false;
+    const parent = String(args.PARENT).toLowerCase();
+    const sub = String(args.SUB).toLowerCase();
+    return (
+      this.currentCommandName.toLowerCase() === parent &&
+      this.currentSubcommandName.toLowerCase() === sub
+    );
+  }
+
+  getCurrentSubcommand() {
+    return this.currentSubcommandName;
   }
 
   registerCommand(args) {
@@ -2968,9 +3161,13 @@ class TurboDevExtension {
       if (this.registeredCommands.has(name)) {
         // preserve args if re-registering just description
         const existing = this.registeredCommands.get(name);
-        this.registeredCommands.set(name, { desc: desc, args: existing.args });
+        this.registeredCommands.set(name, {
+          desc: desc,
+          args: existing.args,
+          subcommands: existing.subcommands || new Map(),
+        });
       } else {
-        this.registeredCommands.set(name, { desc: desc, args: [] });
+        this.registeredCommands.set(name, { desc: desc, args: [], subcommands: new Map() });
       }
     }
   }
@@ -2990,6 +3187,47 @@ class TurboDevExtension {
     const exists = entry.args.find(a => a.name === argData.name);
     if (!exists) {
       entry.args.push(argData);
+    }
+  }
+
+  registerSubcommand(args) {
+    const parent = String(args.PARENT).trim();
+    const name = String(args.NAME).trim().toLowerCase();
+    const desc = String(args.DESC);
+
+    if (!this.registeredCommands.has(parent)) {
+      this._addLine(`@c #f1c40f:Warning: Parent command '${parent}' not registered.@c`);
+      return;
+    }
+    if (!name) return;
+
+    const entry = this.registeredCommands.get(parent);
+    if (!entry.subcommands) entry.subcommands = new Map();
+    if (!entry.subcommands.has(name)) {
+      entry.subcommands.set(name, { desc: desc, args: [] });
+    } else {
+      // Update description only
+      entry.subcommands.get(name).desc = desc;
+    }
+  }
+
+  registerSubcommandArg(args) {
+    const parent = String(args.PARENT).trim();
+    const sub = String(args.SUB).trim().toLowerCase();
+    if (!this.registeredCommands.has(parent)) return;
+    const entry = this.registeredCommands.get(parent);
+    if (!entry.subcommands || !entry.subcommands.has(sub)) return;
+
+    const argData = {
+      name: String(args.NAME),
+      type: String(args.TYPE),
+      optional: args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
+    };
+
+    const subEntry = entry.subcommands.get(sub);
+    const exists = subEntry.args.find(a => a.name === argData.name);
+    if (!exists) {
+      subEntry.args.push(argData);
     }
   }
 
