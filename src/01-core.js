@@ -3192,7 +3192,7 @@ class TurboDevExtension {
 
   registerSubcommand(args) {
     const parent = String(args.PARENT).trim();
-    const name = String(args.NAME).trim();
+    const name = String(args.NAME).trim().toLowerCase();
     const desc = String(args.DESC);
 
     if (!this.registeredCommands.has(parent)) {
@@ -3213,7 +3213,7 @@ class TurboDevExtension {
 
   registerSubcommandArg(args) {
     const parent = String(args.PARENT).trim();
-    const sub = String(args.SUB).trim();
+    const sub = String(args.SUB).trim().toLowerCase();
     if (!this.registeredCommands.has(parent)) return;
     const entry = this.registeredCommands.get(parent);
     if (!entry.subcommands || !entry.subcommands.has(sub)) return;
