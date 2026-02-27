@@ -2733,12 +2733,12 @@ class TurboDevExtension {
 
       if (commandName === 'echo') {
         // Echo args joined by space
-        this._addLine(args.join(' '));
+        this._addLine(positional.join(' '));
         return;
       }
 
       if (commandName === 'theme') {
-        const newTheme = args[0] ? args[0].toLowerCase() : '';
+        const newTheme = positional[0] ? positional[0].toLowerCase() : '';
         if (['standard', 'matrix', 'ocean', 'retro'].includes(newTheme)) {
           this._setTheme(newTheme);
           this._saveSettings(); // Persist theme change
