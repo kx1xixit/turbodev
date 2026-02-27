@@ -1270,7 +1270,7 @@ class TurboDevExtension {
           blockType: Scratch.BlockType.COMMAND,
           text: 'set command bar enabled [ENABLED]',
           arguments: {
-            ENABLED: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+            ENABLED: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
           },
         },
       ],
