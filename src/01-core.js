@@ -907,6 +907,7 @@ class TurboDevExtension {
     // Cleanup & Bindings
     this.boundKeyDown = this._handleKeyDown.bind(this);
     this.boundStopAll = this._onStopAll.bind(this);
+    this.boundCliScroll = this._onCliScroll.bind(this);
 
     // CRITICAL FIX: Bind block methods to 'this'
     this.printText = this.printText.bind(this);
@@ -981,6 +982,7 @@ class TurboDevExtension {
 
     document.removeEventListener('keydown', this.boundKeyDown);
     vm.runtime.off('PROJECT_STOP_ALL', this.boundStopAll);
+    window.removeEventListener('scroll', this.boundCliScroll, { capture: true });
 
     this._cancelPendingQuery();
 
@@ -2112,9 +2114,7 @@ class TurboDevExtension {
     }
   }
 
-  _updateCliPosition() {
-    if (!this.systemSettings.cliMode) return;
-
+  _syncContainerToCanvas() {
     const canvas = vm.renderer.canvas;
     if (canvas) {
       const rect = canvas.getBoundingClientRect();
@@ -2124,7 +2124,17 @@ class TurboDevExtension {
       this.container.style.width = rect.width + 'px';
       this.container.style.height = rect.height + 'px';
     }
+  }
+
+  _updateCliPosition() {
+    if (!this.systemSettings.cliMode) return;
+    this._syncContainerToCanvas();
     this.cliReqId = requestAnimationFrame(this._updateCliPosition.bind(this));
+  }
+
+  _onCliScroll() {
+    if (!this.systemSettings.cliMode) return;
+    this._syncContainerToCanvas();
   }
 
   _setCliMode(enabled) {
@@ -2146,6 +2156,7 @@ class TurboDevExtension {
       // Start tracking loop - CANCEL FIRST to prevent duplication
       if (this.cliReqId) cancelAnimationFrame(this.cliReqId);
       this.cliReqId = requestAnimationFrame(this._updateCliPosition.bind(this));
+      window.addEventListener('scroll', this.boundCliScroll, { capture: true });
     } else {
       this.container.classList.remove('ext_kxTurboDev-cli-mode');
 
@@ -2154,6 +2165,7 @@ class TurboDevExtension {
         cancelAnimationFrame(this.cliReqId);
         this.cliReqId = null;
       }
+      window.removeEventListener('scroll', this.boundCliScroll, { capture: true });
 
       // Restore manual positioning
       this.container.style.position = 'fixed';
