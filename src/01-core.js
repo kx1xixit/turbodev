@@ -2685,6 +2685,15 @@ class TurboDevExtension {
     return safeText;
   }
 
+  _appendTimestamp(line) {
+    const now = new Date();
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'ext_kxTurboDev-log-time';
+    timeSpan.textContent = `[${now.toLocaleTimeString('en-US', { hour12: false })}] `;
+    line.appendChild(timeSpan);
+    return now;
+  }
+
   _addLine(text) {
     const line = document.createElement('div');
     line.className = 'ext_kxTurboDev-terminal-line';
@@ -2694,11 +2703,7 @@ class TurboDevExtension {
 
     // Add Timestamp
     if (this.systemSettings.showTimestamps) {
-      const timeSpan = document.createElement('span');
-      timeSpan.className = 'ext_kxTurboDev-log-time';
-      const now = new Date();
-      timeSpan.textContent = `[${now.toLocaleTimeString('en-US', { hour12: false })}] `;
-      line.appendChild(timeSpan);
+      this._appendTimestamp(line);
     }
 
     const textSpan = document.createElement('span');
@@ -2737,6 +2742,13 @@ class TurboDevExtension {
     // Apply top offset for sticky nesting (approx 26px per level)
     line.style.top = `${this.indentLevel * 26}px`;
 
+    // Add Timestamp
+    const timestampsEnabled = this.systemSettings.showTimestamps;
+    let startTime = null;
+    if (timestampsEnabled) {
+      startTime = this._appendTimestamp(line);
+    }
+
     // Spinner Element
     const spinnerSpan = document.createElement('span');
     spinnerSpan.style.fontFamily = 'monospace';
@@ -2770,6 +2782,8 @@ class TurboDevExtension {
       line: line,
       spinner: spinnerSpan,
       interval: interval,
+      startTime: startTime,
+      timestampsEnabled: timestampsEnabled,
     });
 
     // Increase indentation for subsequent logs
@@ -2798,6 +2812,15 @@ class TurboDevExtension {
     loader.spinner.style.color = isSuccess ? '#2ecc71' : '#e74c3c';
     loader.spinner.style.width = 'auto';
     loader.spinner.style.marginRight = '8px';
+
+    // Append elapsed duration if timestamps were enabled when loader started
+    if (loader.timestampsEnabled && loader.startTime) {
+      const elapsed = Date.now() - loader.startTime.getTime();
+      const durationSpan = document.createElement('span');
+      durationSpan.className = 'ext_kxTurboDev-log-time';
+      durationSpan.textContent = ` (${elapsed}ms)`;
+      loader.line.appendChild(durationSpan);
+    }
   }
 
   // --- Block Implementations ---
