@@ -2737,6 +2737,15 @@ class TurboDevExtension {
     // Apply top offset for sticky nesting (approx 26px per level)
     line.style.top = `${this.indentLevel * 26}px`;
 
+    // Add Timestamp
+    const startTime = new Date();
+    if (this.systemSettings.showTimestamps) {
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'ext_kxTurboDev-log-time';
+      timeSpan.textContent = `[${startTime.toLocaleTimeString('en-US', { hour12: false })}] `;
+      line.appendChild(timeSpan);
+    }
+
     // Spinner Element
     const spinnerSpan = document.createElement('span');
     spinnerSpan.style.fontFamily = 'monospace';
@@ -2770,6 +2779,7 @@ class TurboDevExtension {
       line: line,
       spinner: spinnerSpan,
       interval: interval,
+      startTime: startTime,
     });
 
     // Increase indentation for subsequent logs
@@ -2798,6 +2808,15 @@ class TurboDevExtension {
     loader.spinner.style.color = isSuccess ? '#2ecc71' : '#e74c3c';
     loader.spinner.style.width = 'auto';
     loader.spinner.style.marginRight = '8px';
+
+    // Append elapsed duration if timestamps are enabled
+    if (this.systemSettings.showTimestamps && loader.startTime) {
+      const elapsed = Date.now() - loader.startTime.getTime();
+      const durationSpan = document.createElement('span');
+      durationSpan.className = 'ext_kxTurboDev-log-time';
+      durationSpan.textContent = ` (${elapsed}ms)`;
+      loader.line.appendChild(durationSpan);
+    }
   }
 
   // --- Block Implementations ---
