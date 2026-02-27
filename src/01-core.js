@@ -907,6 +907,7 @@ class TurboDevExtension {
     // Cleanup & Bindings
     this.boundKeyDown = this._handleKeyDown.bind(this);
     this.boundStopAll = this._onStopAll.bind(this);
+    this.boundCliScroll = this._onCliScroll.bind(this);
 
     // CRITICAL FIX: Bind block methods to 'this'
     this.printText = this.printText.bind(this);
@@ -981,6 +982,7 @@ class TurboDevExtension {
 
     document.removeEventListener('keydown', this.boundKeyDown);
     vm.runtime.off('PROJECT_STOP_ALL', this.boundStopAll);
+    window.removeEventListener('scroll', this.boundCliScroll, { capture: true, passive: true });
 
     this._cancelPendingQuery();
 
@@ -2112,19 +2114,26 @@ class TurboDevExtension {
     }
   }
 
+  _syncContainerToCanvas() {
+    if (!this.container) return;
+    if (!vm || !vm.renderer || !vm.renderer.canvas) return;
+    const rect = vm.renderer.canvas.getBoundingClientRect();
+    this.container.style.position = 'fixed';
+    this.container.style.left = rect.left + 'px';
+    this.container.style.top = rect.top + 'px';
+    this.container.style.width = rect.width + 'px';
+    this.container.style.height = rect.height + 'px';
+  }
+
   _updateCliPosition() {
     if (!this.systemSettings.cliMode) return;
-
-    const canvas = vm.renderer.canvas;
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      this.container.style.position = 'fixed';
-      this.container.style.left = rect.left + 'px';
-      this.container.style.top = rect.top + 'px';
-      this.container.style.width = rect.width + 'px';
-      this.container.style.height = rect.height + 'px';
-    }
+    this._syncContainerToCanvas();
     this.cliReqId = requestAnimationFrame(this._updateCliPosition.bind(this));
+  }
+
+  _onCliScroll() {
+    if (!this.systemSettings.cliMode) return;
+    this._syncContainerToCanvas();
   }
 
   _setCliMode(enabled) {
@@ -2145,7 +2154,10 @@ class TurboDevExtension {
 
       // Start tracking loop - CANCEL FIRST to prevent duplication
       if (this.cliReqId) cancelAnimationFrame(this.cliReqId);
+      // Immediately sync to canvas to avoid one-frame misalignment before the rAF loop runs
+      this._syncContainerToCanvas();
       this.cliReqId = requestAnimationFrame(this._updateCliPosition.bind(this));
+      window.addEventListener('scroll', this.boundCliScroll, { capture: true, passive: true });
     } else {
       this.container.classList.remove('ext_kxTurboDev-cli-mode');
 
@@ -2154,9 +2166,10 @@ class TurboDevExtension {
         cancelAnimationFrame(this.cliReqId);
         this.cliReqId = null;
       }
+      window.removeEventListener('scroll', this.boundCliScroll, { capture: true, passive: true });
 
-      // Restore manual positioning
-      this.container.style.position = 'absolute';
+      // Restore normal fixed positioning and saved manual geometry
+      this.container.style.position = 'fixed';
       if (this.prevRect) {
         this.container.style.left = this.prevRect.left;
         this.container.style.top = this.prevRect.top;
