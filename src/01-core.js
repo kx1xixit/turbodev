@@ -424,6 +424,27 @@ const STYLES = `
       .ext_kxTurboDev-terminal-input-area.valid-cmd {
           box-shadow: inset 0 -2px 0 var(--ext_kxTurboDev-term-accent);
       }
+      /* Disabled Command Bar Overlay */
+      .ext_kxTurboDev-terminal-input-area.ext_kxTurboDev-input-disabled > :not(.ext_kxTurboDev-hint-bar) {
+          filter: blur(2px);
+          opacity: 0.35;
+          pointer-events: none;
+          user-select: none;
+      }
+      .ext_kxTurboDev-terminal-input-area.ext_kxTurboDev-input-disabled::after {
+          content: '✕';
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.1em;
+          font-weight: bold;
+          color: var(--ext_kxTurboDev-term-accent);
+          background: rgba(0, 0, 0, 0.15);
+          cursor: not-allowed;
+          pointer-events: all;
+      }
       
       /* Hint Bar for Autocomplete/Syntax */
       .ext_kxTurboDev-hint-bar {
@@ -2087,10 +2108,12 @@ class TurboDevExtension {
     this.commandBarEnabled = enabled;
     if (this.inputField) {
       if (enabled) {
-        this.inputField.parentElement.style.display = 'flex';
+        this.inputField.parentElement.classList.remove('ext_kxTurboDev-input-disabled');
+        this.inputField.disabled = false;
       } else if (!this.pendingQuery) {
-        // Defer the DOM hide if a query is in-flight to avoid orphaning its promise
-        this.inputField.parentElement.style.display = 'none';
+        // Defer the visual disable if a query is in-flight to avoid orphaning its promise
+        this.inputField.parentElement.classList.add('ext_kxTurboDev-input-disabled');
+        this.inputField.disabled = true;
       }
     }
   }
@@ -3066,8 +3089,6 @@ class TurboDevExtension {
   }
 
   printText(args) {
-    // Debugging
-    console.log('[TurboDev] printText called with:', args);
     // Ensure string conversion to prevent crashes if input is null/undefined
     this._addLine(String(args.TEXT));
   }
@@ -3079,7 +3100,6 @@ class TurboDevExtension {
   }
 
   getLastCommand() {
-    console.log('[TurboDev] getLastCommand called. Value:', this.lastCommand);
     return this.lastCommand || '';
   }
 
