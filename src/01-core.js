@@ -1282,6 +1282,8 @@ class TurboDevExtension {
       this.promptLabel.textContent = '>';
       this.inputField.classList.remove('ext_kxTurboDev-input-shake');
       if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
+      // Apply any deferred disable that occurred mid-query (pendingQuery is now null)
+      else if (!this.commandBarEnabled) this._setCommandBarEnabled(false);
     }
   }
 
@@ -2084,7 +2086,12 @@ class TurboDevExtension {
   _setCommandBarEnabled(enabled) {
     this.commandBarEnabled = enabled;
     if (this.inputField) {
-      this.inputField.parentElement.style.display = enabled ? 'flex' : 'none';
+      if (enabled) {
+        this.inputField.parentElement.style.display = 'flex';
+      } else if (!this.pendingQuery) {
+        // Defer the DOM hide if a query is in-flight to avoid orphaning its promise
+        this.inputField.parentElement.style.display = 'none';
+      }
     }
   }
 
@@ -2445,7 +2452,9 @@ class TurboDevExtension {
           }
           this.pendingQuery = null;
           this.promptLabel.textContent = '>'; // Reset prompt
-          if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
+      if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
+      // Apply any deferred disable that occurred mid-query (pendingQuery is now null)
+      else if (!this.commandBarEnabled) this._setCommandBarEnabled(false);
         } else {
           this._addLine(`@c #e74c3c:Invalid input. Expected ${type}.@c`);
           // Shake Effect
