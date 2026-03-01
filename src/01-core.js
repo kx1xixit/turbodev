@@ -889,6 +889,7 @@ class TurboDevExtension {
     // Query state
     this.pendingQuery = null;
     this.userAnswer = '';
+    this.customPrompt = '>';
 
     // Command Bar state
     this.commandBarEnabled = true;
@@ -1372,7 +1373,7 @@ class TurboDevExtension {
       const wasCommandBarDisabled = this.pendingQuery.wasCommandBarDisabled;
       this.pendingQuery.resolve(); // Resolve empty string/null to unblock stack
       this.pendingQuery = null;
-      this.promptLabel.textContent = '>';
+      this.promptLabel.textContent = this.customPrompt;
       this.inputField.classList.remove('ext_kxTurboDev-input-shake');
       if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
       // Apply any deferred disable that occurred mid-query (pendingQuery is now null)
@@ -2592,7 +2593,7 @@ class TurboDevExtension {
             this.pendingQuery.resolve();
           }
           this.pendingQuery = null;
-          this.promptLabel.textContent = '>'; // Reset prompt
+          this.promptLabel.textContent = this.customPrompt; // Reset prompt
           if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
           // Apply any deferred disable that occurred mid-query (pendingQuery is now null)
           else if (!this.commandBarEnabled) this._setCommandBarEnabled(false);
@@ -3345,8 +3346,9 @@ class TurboDevExtension {
   }
 
   setPrompt(args) {
+    this.customPrompt = String(args.TEXT);
     if (this.promptLabel) {
-      this.promptLabel.textContent = args.TEXT;
+      this.promptLabel.textContent = this.customPrompt;
     }
   }
 
