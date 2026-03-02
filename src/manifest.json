@@ -1,7 +1,7 @@
 {
   "name": "TurboDev",
   "id": "kxTurboDev",
-  "version": "1.1.0-rc4",
+  "version": "1.1.0-rc5",
   "description": "The successor to TurboWarp's built-in console.",
   "author": "@kx1xixit",
   "license": "KXEC-1.1"
