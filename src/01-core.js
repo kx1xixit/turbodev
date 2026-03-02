@@ -2013,7 +2013,7 @@ class TurboDevExtension {
     copyBtn.className = 'ext_kxTurboDev-settings-btn-action';
     copyBtn.textContent = 'Copy History to Clipboard';
     copyBtn.onclick = () => {
-      const text = this.outputContainer.innerText;
+      const text = this._getOutputText();
       // Add try-catch for robustness
       navigator.clipboard
         .writeText(text)
@@ -2088,13 +2088,26 @@ class TurboDevExtension {
     this.systemSettings.theme = themeName;
   }
 
+  _getOutputText() {
+    const lines = [];
+    for (let i = 0; i < this.outputContainer.children.length; i++) {
+      const child = this.outputContainer.children[i];
+      if (child.classList.contains('ext_kxTurboDev-help-container')) {
+        child.querySelectorAll('.ext_kxTurboDev-help-card').forEach(card => {
+          const name = card.querySelector('.ext_kxTurboDev-cmd-name')?.textContent || '';
+          const desc = card.querySelector('.ext_kxTurboDev-cmd-desc')?.textContent || '';
+          lines.push(`${name} - ${desc}`);
+        });
+      } else {
+        lines.push(child.textContent);
+      }
+    }
+    return lines.join('\n');
+  }
+
   _exportLogs() {
     try {
-      const lines = [];
-      for (let i = 0; i < this.outputContainer.children.length; i++) {
-        lines.push(this.outputContainer.children[i].textContent);
-      }
-      const text = lines.join('\n');
+      const text = this._getOutputText();
       const blob = new Blob([text], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const filename = `turbodev-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
