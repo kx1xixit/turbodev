@@ -2563,7 +2563,7 @@ class TurboDevExtension {
       // If we are pending a query, capture this input
       if (this.pendingQuery) {
         // Echo what user typed
-        this._addLine(`@c #9b59b6:${text}@c`);
+        this._addLine(text, '#9b59b6');
 
         let isValid = false;
         let parsed = null;
@@ -2621,7 +2621,7 @@ class TurboDevExtension {
 
       // Standard Command Logic
       // Echo command with USER tag
-      this._addLine(`@c #9b59b6:${this.promptLabel.textContent} ${text}@c`);
+      this._addLine(`${this.promptLabel.textContent} ${text}`, '#9b59b6');
 
       // Store History
       this.commandHistory.push(text);
@@ -2919,7 +2919,7 @@ class TurboDevExtension {
     return now;
   }
 
-  _addLine(text) {
+  _addLine(text, baseColor = 'var(--ext_kxTurboDev-term-text)') {
     const line = document.createElement('div');
     line.className = 'ext_kxTurboDev-terminal-line';
 
@@ -2936,7 +2936,7 @@ class TurboDevExtension {
     textSpan.innerHTML = this._parseFormatting(text);
 
     // Default styling is now handled by CSS var, no specific type class logic
-    textSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
+    textSpan.style.color = baseColor;
 
     line.appendChild(textSpan);
 
@@ -3066,7 +3066,7 @@ class TurboDevExtension {
     const wasCommandBarDisabled = !this.commandBarEnabled;
     if (wasCommandBarDisabled) this._setCommandBarEnabled(true);
 
-    this._addLine(`@c #e67e22:${prompt}@c`);
+    this._addLine(prompt, '#e67e22');
     this.promptLabel.textContent = '?'; // Visual cue
     this.inputField.focus(); // Focus input
 
