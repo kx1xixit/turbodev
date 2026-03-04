@@ -828,6 +828,8 @@ const STYLES = `
       }
   `;
 
+const FLAG_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+
 class TurboDevExtension {
   constructor() {
     this.container = null;
@@ -2575,7 +2577,7 @@ class TurboDevExtension {
       if (token.startsWith('--')) {
         const rawName = token.slice(2);
         // Only accept valid flag names (letters, digits, hyphens; must start with letter/digit)
-        if (/^[a-zA-Z0-9][a-zA-Z0-9-]*$/.test(rawName)) {
+        if (FLAG_NAME_RE.test(rawName)) {
           const flagName = rawName.toLowerCase();
           if (i + 1 < tokens.length && !tokens[i + 1].startsWith('--')) {
             flags[flagName] = tokens[i + 1];
@@ -2773,6 +2775,31 @@ class TurboDevExtension {
           const realCmd = this.aliases.has(filter) ? this.aliases.get(filter) : filter;
           const data = this.registeredCommands.get(realCmd);
 
+          // Check if a subcommand name was also supplied: help <cmd> <sub>
+          const subFilter = positional[1] ? positional[1].toLowerCase() : null;
+          if (data && subFilter && data.subcommands && data.subcommands.has(subFilter)) {
+            const subData = data.subcommands.get(subFilter);
+            this._addLine(`@c #7f8c8d:--- Help: ${realCmd} ${subFilter} ---@c`);
+            this._addLine(`@c #e4e4e4:${subData.desc}@c`);
+            if (subData.args && subData.args.length > 0) {
+              this._addLine(`@c #3498db:Arguments:@c`);
+              subData.args.forEach(a => {
+                this._addLine(
+                  `  @c #94a3b8:${a.name}@c (@c #e67e22:${a.type}@c)${a.optional ? ' (optional)' : ''}`
+                );
+              });
+            } else {
+              this._addLine(`@c #7f8c8d:No arguments required.@c`);
+            }
+            if (subData.flags && subData.flags.length > 0) {
+              this._addLine(`@c #3498db:Flags:@c`);
+              subData.flags.forEach(f => {
+                this._addLine(`  @c #94a3b8:--${f.name}@c - ${f.desc}`);
+              });
+            }
+            return;
+          }
+
           if (data) {
             this._addLine(`@c #7f8c8d:--- Help: ${realCmd} ---@c`);
             this._addLine(`@c #e4e4e4:${data.desc}@c`);
@@ -2790,6 +2817,11 @@ class TurboDevExtension {
               this._addLine(`@c #3498db:Subcommands:@c`);
               data.subcommands.forEach((subData, subName) => {
                 this._addLine(`  @c #94a3b8:${subName}@c - ${subData.desc}`);
+                if (subData.flags && subData.flags.length > 0) {
+                  subData.flags.forEach(f => {
+                    this._addLine(`    @c #94a3b8:--${f.name}@c - ${f.desc}`);
+                  });
+                }
               });
             }
             if (data.flags && data.flags.length > 0) {
@@ -3564,16 +3596,20 @@ class TurboDevExtension {
     const cmd = String(args.CMD).trim();
     if (!this.registeredCommands.has(cmd)) return;
 
-    const flagData = {
-      name: String(args.NAME).trim().toLowerCase(),
-      desc: String(args.DESC),
-    };
+    // Strip optional leading '--' and validate against the same regex as _parseFlags
+    const rawName = String(args.NAME).trim().replace(/^--/, '').toLowerCase();
+    if (!FLAG_NAME_RE.test(rawName)) {
+      this._addLine(
+        `@c #f1c40f:Warning: '${String(args.NAME).trim()}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).@c`
+      );
+      return;
+    }
 
-    if (!flagData.name) return;
+    const flagData = { name: rawName, desc: String(args.DESC) };
 
     const entry = this.registeredCommands.get(cmd);
     if (!entry.flags) entry.flags = [];
-    const exists = entry.flags.find(f => f.name === flagData.name);
+    const exists = entry.flags.find(f => f.name === rawName);
     if (!exists) {
       entry.flags.push(flagData);
     }
@@ -3586,16 +3622,20 @@ class TurboDevExtension {
     const entry = this.registeredCommands.get(parent);
     if (!entry.subcommands || !entry.subcommands.has(sub)) return;
 
-    const flagData = {
-      name: String(args.NAME).trim().toLowerCase(),
-      desc: String(args.DESC),
-    };
+    // Strip optional leading '--' and validate against the same regex as _parseFlags
+    const rawName = String(args.NAME).trim().replace(/^--/, '').toLowerCase();
+    if (!FLAG_NAME_RE.test(rawName)) {
+      this._addLine(
+        `@c #f1c40f:Warning: '${String(args.NAME).trim()}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).@c`
+      );
+      return;
+    }
 
-    if (!flagData.name) return;
+    const flagData = { name: rawName, desc: String(args.DESC) };
 
     const subEntry = entry.subcommands.get(sub);
     if (!subEntry.flags) subEntry.flags = [];
-    const exists = subEntry.flags.find(f => f.name === flagData.name);
+    const exists = subEntry.flags.find(f => f.name === rawName);
     if (!exists) {
       subEntry.flags.push(flagData);
     }
