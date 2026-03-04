@@ -134,6 +134,11 @@ globalThis.Scratch = {
 };
 
 require(BUILD_FILE);
+
+if (!registeredExtension) {
+  console.error('Runtime check failed: extension did not call Scratch.extensions.register.');
+  process.exit(1);
+}
 console.log('Runtime check passed.');
 
 // Report bundle size
@@ -149,7 +154,9 @@ if (registeredExtension && typeof registeredExtension.getInfo === 'function') {
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`Could not call getInfo() on registered extension: ${detail}`);
+    process.exitCode = 1;
   }
 } else {
   console.warn('Could not retrieve block info from registered extension.');
+  process.exitCode = 1;
 }
