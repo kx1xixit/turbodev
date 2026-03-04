@@ -1376,6 +1376,7 @@ class TurboDevExtension {
       const wasCommandBarDisabled = this.pendingQuery.wasCommandBarDisabled;
       this.pendingQuery.resolve(); // Resolve empty string/null to unblock stack
       this.pendingQuery = null;
+      this.userAnswer = ''; // Clear stale answer so getAnswer() returns '' after cancellation
       this.promptLabel.textContent = this.customPrompt;
       this.inputField.classList.remove('ext_kxTurboDev-input-shake');
       if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
