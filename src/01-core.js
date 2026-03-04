@@ -920,8 +920,8 @@ class TurboDevExtension {
     this.errorText = this.errorText.bind(this);
     this.verboseText = this.verboseText.bind(this);
     this.doneText = this.doneText.bind(this);
-    this.queryLog = this.queryLog.bind(this);
-    this.loadLog = this.loadLog.bind(this);
+    this.queryText = this.queryText.bind(this);
+    this.loadText = this.loadText.bind(this);
     this.getLastCommand = this.getLastCommand.bind(this);
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
@@ -1326,7 +1326,7 @@ class TurboDevExtension {
           },
         },
         {
-          opcode: 'queryLog',
+          opcode: 'queryText',
           blockType: Scratch.BlockType.COMMAND,
           text: 'query [TEXT]',
           arguments: {
@@ -1334,7 +1334,7 @@ class TurboDevExtension {
           },
         },
         {
-          opcode: 'loadLog',
+          opcode: 'loadText',
           blockType: Scratch.BlockType.COMMAND,
           text: 'load [TEXT]',
           arguments: {
@@ -3542,12 +3542,12 @@ class TurboDevExtension {
     this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, String(args.TEXT));
   }
 
-  queryLog(args, util) {
+  queryText(args, util) {
     const sprite = this._getSpriteName(util);
     this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, String(args.TEXT));
   }
 
-  loadLog(args, util) {
+  loadText(args, util) {
     const sprite = this._getSpriteName(util);
     this._addTaggedLine('{ ~ }', '#B48EAD', '#8C6D87', sprite, String(args.TEXT));
   }
