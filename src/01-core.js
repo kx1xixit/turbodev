@@ -828,6 +828,8 @@ const STYLES = `
       }
   `;
 
+const FLAG_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+
 class TurboDevExtension {
   constructor() {
     this.container = null;
@@ -951,6 +953,8 @@ class TurboDevExtension {
     this.whenSpecificCommandReceived = this.whenSpecificCommandReceived.bind(this);
     this.registerSubcommand = this.registerSubcommand.bind(this);
     this.registerSubcommandArg = this.registerSubcommandArg.bind(this);
+    this.registerCommandFlag = this.registerCommandFlag.bind(this);
+    this.registerSubcommandFlag = this.registerSubcommandFlag.bind(this);
     this.whenSubcommandReceived = this.whenSubcommandReceived.bind(this);
     this.getCurrentSubcommand = this.getCurrentSubcommand.bind(this);
     this.getFlag = this.getFlag.bind(this);
@@ -983,6 +987,7 @@ class TurboDevExtension {
       desc: desc,
       args: args,
       subcommands: new Map(),
+      flags: [],
     });
   }
 
@@ -1233,6 +1238,16 @@ class TurboDevExtension {
           },
         },
         {
+          opcode: 'registerCommandFlag',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define flag [NAME] for [CMD] description [DESC]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
+            CMD: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Enable verbose output' },
+          },
+        },
+        {
           opcode: 'whenCommandReceived',
           blockType: Scratch.BlockType.EVENT,
           text: 'when any command received',
@@ -1312,6 +1327,17 @@ class TurboDevExtension {
             PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
             TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
             REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
+          },
+        },
+        {
+          opcode: 'registerSubcommandFlag',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define flag [NAME] for subcommand [SUB] of [PARENT] description [DESC]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Enable verbose output' },
           },
         },
         {
@@ -2551,7 +2577,7 @@ class TurboDevExtension {
       if (token.startsWith('--')) {
         const rawName = token.slice(2);
         // Only accept valid flag names (letters, digits, hyphens; must start with letter/digit)
-        if (/^[a-zA-Z0-9][a-zA-Z0-9-]*$/.test(rawName)) {
+        if (FLAG_NAME_RE.test(rawName)) {
           const flagName = rawName.toLowerCase();
           if (i + 1 < tokens.length && !tokens[i + 1].startsWith('--')) {
             flags[flagName] = tokens[i + 1];
@@ -2749,6 +2775,31 @@ class TurboDevExtension {
           const realCmd = this.aliases.has(filter) ? this.aliases.get(filter) : filter;
           const data = this.registeredCommands.get(realCmd);
 
+          // Check if a subcommand name was also supplied: help <cmd> <sub>
+          const subFilter = positional[1] ? positional[1].toLowerCase() : null;
+          if (data && subFilter && data.subcommands && data.subcommands.has(subFilter)) {
+            const subData = data.subcommands.get(subFilter);
+            this._addLine(`@c #7f8c8d:--- Help: ${realCmd} ${subFilter} ---@c`);
+            this._addLine(`@c #e4e4e4:${subData.desc}@c`);
+            if (subData.args && subData.args.length > 0) {
+              this._addLine(`@c #3498db:Arguments:@c`);
+              subData.args.forEach(a => {
+                this._addLine(
+                  `  @c #94a3b8:${a.name}@c (@c #e67e22:${a.type}@c)${a.optional ? ' (optional)' : ''}`
+                );
+              });
+            } else {
+              this._addLine(`@c #7f8c8d:No arguments required.@c`);
+            }
+            if (subData.flags && subData.flags.length > 0) {
+              this._addLine(`@c #3498db:Flags:@c`);
+              subData.flags.forEach(f => {
+                this._addLine(`  @c #94a3b8:--${f.name}@c - ${f.desc}`);
+              });
+            }
+            return;
+          }
+
           if (data) {
             this._addLine(`@c #7f8c8d:--- Help: ${realCmd} ---@c`);
             this._addLine(`@c #e4e4e4:${data.desc}@c`);
@@ -2766,6 +2817,17 @@ class TurboDevExtension {
               this._addLine(`@c #3498db:Subcommands:@c`);
               data.subcommands.forEach((subData, subName) => {
                 this._addLine(`  @c #94a3b8:${subName}@c - ${subData.desc}`);
+                if (subData.flags && subData.flags.length > 0) {
+                  subData.flags.forEach(f => {
+                    this._addLine(`    @c #94a3b8:--${f.name}@c - ${f.desc}`);
+                  });
+                }
+              });
+            }
+            if (data.flags && data.flags.length > 0) {
+              this._addLine(`@c #3498db:Flags:@c`);
+              data.flags.forEach(f => {
+                this._addLine(`  @c #94a3b8:--${f.name}@c - ${f.desc}`);
               });
             }
           } else {
@@ -2817,6 +2879,17 @@ class TurboDevExtension {
               subDiv.appendChild(badge);
             });
             card.appendChild(subDiv);
+          }
+          if (data.flags && data.flags.length > 0) {
+            const flagsDiv = document.createElement('div');
+            flagsDiv.className = 'ext_kxTurboDev-cmd-args';
+            data.flags.forEach(f => {
+              const badge = document.createElement('span');
+              badge.className = 'ext_kxTurboDev-arg-badge';
+              badge.textContent = '--' + f.name;
+              flagsDiv.appendChild(badge);
+            });
+            card.appendChild(flagsDiv);
           }
           grid.appendChild(card);
         });
@@ -3446,15 +3519,16 @@ class TurboDevExtension {
 
     if (name) {
       if (this.registeredCommands.has(name)) {
-        // preserve args if re-registering just description
+        // preserve args and flags if re-registering just description
         const existing = this.registeredCommands.get(name);
         this.registeredCommands.set(name, {
           desc: desc,
           args: existing.args,
           subcommands: existing.subcommands || new Map(),
+          flags: existing.flags || [],
         });
       } else {
-        this.registeredCommands.set(name, { desc: desc, args: [], subcommands: new Map() });
+        this.registeredCommands.set(name, { desc: desc, args: [], subcommands: new Map(), flags: [] });
       }
     }
   }
@@ -3491,7 +3565,7 @@ class TurboDevExtension {
     const entry = this.registeredCommands.get(parent);
     if (!entry.subcommands) entry.subcommands = new Map();
     if (!entry.subcommands.has(name)) {
-      entry.subcommands.set(name, { desc: desc, args: [] });
+      entry.subcommands.set(name, { desc: desc, args: [], flags: [] });
     } else {
       // Update description only
       entry.subcommands.get(name).desc = desc;
@@ -3515,6 +3589,59 @@ class TurboDevExtension {
     const exists = subEntry.args.find(a => a.name === argData.name);
     if (!exists) {
       subEntry.args.push(argData);
+    }
+  }
+
+  registerCommandFlag(args) {
+    const cmd = String(args.CMD).trim();
+    if (!this.registeredCommands.has(cmd)) return;
+
+    // Strip optional leading '--' and validate against the same regex as _parseFlags
+    const rawName = String(args.NAME).trim().replace(/^--/, '').toLowerCase();
+    if (!FLAG_NAME_RE.test(rawName)) {
+      const displayName = String(args.NAME).trim().replace(/@/g, '');
+      this._addLine(
+        `Warning: '${displayName}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).`,
+        '#f1c40f'
+      );
+      return;
+    }
+
+    const flagData = { name: rawName, desc: String(args.DESC) };
+
+    const entry = this.registeredCommands.get(cmd);
+    if (!entry.flags) entry.flags = [];
+    const exists = entry.flags.find(f => f.name === rawName);
+    if (!exists) {
+      entry.flags.push(flagData);
+    }
+  }
+
+  registerSubcommandFlag(args) {
+    const parent = String(args.PARENT).trim();
+    const sub = String(args.SUB).trim().toLowerCase();
+    if (!this.registeredCommands.has(parent)) return;
+    const entry = this.registeredCommands.get(parent);
+    if (!entry.subcommands || !entry.subcommands.has(sub)) return;
+
+    // Strip optional leading '--' and validate against the same regex as _parseFlags
+    const rawName = String(args.NAME).trim().replace(/^--/, '').toLowerCase();
+    if (!FLAG_NAME_RE.test(rawName)) {
+      const displayName = String(args.NAME).trim().replace(/@/g, '');
+      this._addLine(
+        `Warning: '${displayName}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).`,
+        '#f1c40f'
+      );
+      return;
+    }
+
+    const flagData = { name: rawName, desc: String(args.DESC) };
+
+    const subEntry = entry.subcommands.get(sub);
+    if (!subEntry.flags) subEntry.flags = [];
+    const exists = subEntry.flags.find(f => f.name === rawName);
+    if (!exists) {
+      subEntry.flags.push(flagData);
     }
   }
 
