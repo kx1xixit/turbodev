@@ -70,7 +70,7 @@ const STYLES = `
       }
   
       .ext_kxTurboDev-terminal-wrapper {
-          position: absolute;
+          position: fixed;
           top: 40px;
           left: 40px;
           width: 550px;
@@ -897,6 +897,9 @@ class TurboDevExtension {
     // Hybrid Trigger for Hat Block
     this._triggerHat = false;
 
+    // Verbose logging toggle (per-project)
+    this.verboseLogging = false;
+
     this.indentLevel = 0;
     this.loaderStack = [];
     this.ASCII_FRAMES = ['|', '/', '-', '\\'];
@@ -911,14 +914,12 @@ class TurboDevExtension {
     this.boundCliScroll = this._onCliScroll.bind(this);
 
     // CRITICAL FIX: Bind block methods to 'this'
-    this.printText = this.printText.bind(this);
+    this.logText = this.logText.bind(this);
     this.getLastCommand = this.getLastCommand.bind(this);
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
-    this.queryUser = this.queryUser.bind(this);
+    this.queryText = this.queryText.bind(this);
     this.runCommand = this.runCommand.bind(this);
-    this.replySuccess = this.replySuccess.bind(this);
-    this.replyError = this.replyError.bind(this);
     this.getArgumentCount = this.getArgumentCount.bind(this);
     this.whenSpecificCommandReceived = this.whenSpecificCommandReceived.bind(this);
     this.registerSubcommand = this.registerSubcommand.bind(this);
@@ -930,6 +931,7 @@ class TurboDevExtension {
     this.getNamedArg = this.getNamedArg.bind(this);
 
     this._loadSettings();
+    this._loadProjectSettings();
     this._createUI();
     this._setupGlobalHotkeys();
 
@@ -1027,6 +1029,33 @@ class TurboDevExtension {
     }
   }
 
+  _getProjectKey() {
+    return `ext_kxTurboDev_proj_${window.location.pathname}`;
+  }
+
+  _loadProjectSettings() {
+    try {
+      const stored = localStorage.getItem(this._getProjectKey());
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        this.verboseLogging = !!parsed.verboseLogging;
+      }
+    } catch (e) {
+      console.warn('TurboDev: Failed to load project settings', e);
+    }
+  }
+
+  _saveProjectSettings() {
+    try {
+      localStorage.setItem(
+        this._getProjectKey(),
+        JSON.stringify({ verboseLogging: this.verboseLogging })
+      );
+    } catch (e) {
+      console.warn('TurboDev: Failed to save project settings', e);
+    }
+  }
+
   getInfo() {
     return {
       id: 'kxTurboDev',
@@ -1035,6 +1064,7 @@ class TurboDevExtension {
       color2: '#2872a3',
       color3: '#10496f',
       blocks: [
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Terminal') },
         {
           opcode: 'showTerminal',
           blockType: Scratch.BlockType.COMMAND,
@@ -1049,6 +1079,56 @@ class TurboDevExtension {
           opcode: 'clearTerminal',
           blockType: Scratch.BlockType.COMMAND,
           text: 'clear terminal',
+        },
+        {
+          opcode: 'isTerminalOpen',
+          blockType: Scratch.BlockType.BOOLEAN,
+          text: 'is terminal open?',
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Logging') },
+        {
+          opcode: 'logText',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'log [TYPE] [TEXT]',
+          arguments: {
+            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'LOG_LEVELS', defaultValue: 'log' },
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'System Ready...' },
+          },
+        },
+        {
+          opcode: 'setPrompt',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set prompt to [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: '>' },
+          },
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Input') },
+        {
+          opcode: 'queryText',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'query [TEXT] expecting [TYPE]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Confirm action?' },
+            TYPE: {
+              type: Scratch.ArgumentType.STRING,
+              menu: 'QUERY_TYPES',
+              defaultValue: 'confirmation',
+            },
+          },
+        },
+        {
+          opcode: 'getAnswer',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'last answer',
+        },
+        {
+          opcode: 'setCommandBarEnabled',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set command bar enabled [ENABLED]',
+          arguments: {
+            ENABLED: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
+          },
         },
         {
           opcode: 'runCommand',
@@ -1066,26 +1146,7 @@ class TurboDevExtension {
             },
           },
         },
-        '---',
-        {
-          opcode: 'queryUser',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'query user [PROMPT] expecting [TYPE]',
-          arguments: {
-            PROMPT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Confirm action?' },
-            TYPE: {
-              type: Scratch.ArgumentType.STRING,
-              menu: 'QUERY_TYPES',
-              defaultValue: 'confirmation',
-            },
-          },
-        },
-        {
-          opcode: 'getAnswer',
-          blockType: Scratch.BlockType.REPORTER,
-          text: 'last answer',
-        },
-        '---',
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Commands') },
         {
           opcode: 'registerCommand',
           blockType: Scratch.BlockType.COMMAND,
@@ -1121,178 +1182,6 @@ class TurboDevExtension {
               type: Scratch.ArgumentType.STRING,
               defaultValue: 'spawn',
             },
-          },
-        },
-        {
-          opcode: 'registerSubcommand',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register subcommand [NAME] of [PARENT] description [DESC]',
-          arguments: {
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
-            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
-            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Spawns an enemy' },
-          },
-        },
-        {
-          opcode: 'registerSubcommandArg',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'define argument [NAME] for subcommand [SUB] of [PARENT] type [TYPE] is required? [REQ]',
-          arguments: {
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
-            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
-            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
-            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
-            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
-          },
-        },
-        {
-          opcode: 'whenSubcommandReceived',
-          blockType: Scratch.BlockType.HAT,
-          text: 'when subcommand [SUB] of [PARENT] received',
-          arguments: {
-            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
-            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
-          },
-        },
-        {
-          opcode: 'getCurrentSubcommand',
-          blockType: Scratch.BlockType.REPORTER,
-          text: 'current subcommand',
-        },
-        '---',
-        {
-          opcode: 'registerSettingToggle',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register toggle setting [ID] name [NAME] default [DEF]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Dark Mode' },
-            DEF: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'no' },
-          },
-        },
-        {
-          opcode: 'registerSettingSlider',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register slider setting [ID] name [NAME] min [MIN] max [MAX] default [DEF]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'volume' },
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Volume' },
-            MIN: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0 },
-            MAX: { type: Scratch.ArgumentType.NUMBER, defaultValue: 100 },
-            DEF: { type: Scratch.ArgumentType.NUMBER, defaultValue: 50 },
-          },
-        },
-        {
-          opcode: 'registerSettingInput',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register text setting [ID] name [NAME] default [DEF]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'playerName' },
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Player Name' },
-            DEF: { type: Scratch.ArgumentType.STRING, defaultValue: 'Guest' },
-          },
-        },
-        {
-          opcode: 'getSettingValue',
-          blockType: Scratch.BlockType.REPORTER,
-          text: 'get setting [ID]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
-          },
-        },
-        '---',
-        {
-          opcode: 'setSystemSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'set system setting [SETTING] to [VALUE]',
-          arguments: {
-            SETTING: { type: Scratch.ArgumentType.STRING, menu: 'SYSTEM_SETTINGS' },
-            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: '14' },
-          },
-        },
-        {
-          opcode: 'setCustomSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'set custom setting [ID] to [VALUE]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
-            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
-          },
-        },
-        {
-          opcode: 'lockSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'lock setting [ID]',
-          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
-        },
-        {
-          opcode: 'unlockSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'unlock setting [ID]',
-          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
-        },
-        {
-          opcode: 'lockSettingsMenu',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'lock settings menu',
-        },
-        {
-          opcode: 'unlockSettingsMenu',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'unlock settings menu',
-        },
-        '---',
-        {
-          opcode: 'printText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'print [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'System Ready...' },
-          },
-        },
-        {
-          opcode: 'startLoading',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'start loading group [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Loading assets...' },
-          },
-        },
-        {
-          opcode: 'finishLoading',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'finish loading group [STATUS]',
-          arguments: {
-            STATUS: {
-              type: Scratch.ArgumentType.STRING,
-              menu: 'LOADING_STATUS',
-              defaultValue: 'success',
-            },
-          },
-        },
-        {
-          opcode: 'setPrompt',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'set prompt to [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: '>' },
-          },
-        },
-        '---',
-        {
-          opcode: 'replySuccess',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'reply with success [MSG]',
-          arguments: {
-            MSG: { type: Scratch.ArgumentType.STRING, defaultValue: 'Done!' },
-          },
-        },
-        {
-          opcode: 'replyError',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'reply with error [MSG]',
-          arguments: {
-            MSG: { type: Scratch.ArgumentType.STRING, defaultValue: 'Invalid arg!' },
           },
         },
         {
@@ -1337,19 +1226,124 @@ class TurboDevExtension {
             NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
           },
         },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Subcommands') },
         {
-          opcode: 'isTerminalOpen',
-          blockType: Scratch.BlockType.BOOLEAN,
-          text: 'is terminal open?',
-        },
-        '---',
-        {
-          opcode: 'setCommandBarEnabled',
+          opcode: 'registerSubcommand',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'set command bar enabled [ENABLED]',
+          text: 'register subcommand [NAME] of [PARENT] description [DESC]',
           arguments: {
-            ENABLED: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Spawns an enemy' },
           },
+        },
+        {
+          opcode: 'registerSubcommandArg',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define argument [NAME] for subcommand [SUB] of [PARENT] type [TYPE] is required? [REQ]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
+            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
+          },
+        },
+        {
+          opcode: 'whenSubcommandReceived',
+          blockType: Scratch.BlockType.HAT,
+          text: 'when subcommand [SUB] of [PARENT] received',
+          arguments: {
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+          },
+        },
+        {
+          opcode: 'getCurrentSubcommand',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'current subcommand',
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('User Settings') },
+        {
+          opcode: 'registerSettingToggle',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register toggle setting [ID] name [NAME] default [DEF]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Dark Mode' },
+            DEF: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'no' },
+          },
+        },
+        {
+          opcode: 'registerSettingSlider',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register slider setting [ID] name [NAME] min [MIN] max [MAX] default [DEF]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'volume' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Volume' },
+            MIN: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0 },
+            MAX: { type: Scratch.ArgumentType.NUMBER, defaultValue: 100 },
+            DEF: { type: Scratch.ArgumentType.NUMBER, defaultValue: 50 },
+          },
+        },
+        {
+          opcode: 'registerSettingInput',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register text setting [ID] name [NAME] default [DEF]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'playerName' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Player Name' },
+            DEF: { type: Scratch.ArgumentType.STRING, defaultValue: 'Guest' },
+          },
+        },
+        {
+          opcode: 'getSettingValue',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'get setting [ID]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
+          },
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('System') },
+        {
+          opcode: 'setSystemSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set system setting [SETTING] to [VALUE]',
+          arguments: {
+            SETTING: { type: Scratch.ArgumentType.STRING, menu: 'SYSTEM_SETTINGS' },
+            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: '14' },
+          },
+        },
+        {
+          opcode: 'setCustomSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set custom setting [ID] to [VALUE]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
+            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
+          },
+        },
+        {
+          opcode: 'lockSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'lock setting [ID]',
+          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
+        },
+        {
+          opcode: 'unlockSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'unlock setting [ID]',
+          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
+        },
+        {
+          opcode: 'lockSettingsMenu',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'lock settings menu',
+        },
+        {
+          opcode: 'unlockSettingsMenu',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'unlock settings menu',
         },
       ],
       menus: {
@@ -1357,9 +1351,9 @@ class TurboDevExtension {
           acceptReporters: true,
           items: ['yes', 'no'],
         },
-        LOADING_STATUS: {
+        LOG_LEVELS: {
           acceptReporters: true,
-          items: ['success', 'error'],
+          items: ['log', 'hint', 'warn', 'error', 'verbose', 'done', 'load', 'headless'],
         },
         QUERY_TYPES: {
           acceptReporters: true,
@@ -1382,6 +1376,7 @@ class TurboDevExtension {
       const wasCommandBarDisabled = this.pendingQuery.wasCommandBarDisabled;
       this.pendingQuery.resolve(); // Resolve empty string/null to unblock stack
       this.pendingQuery = null;
+      this.userAnswer = ''; // Clear stale answer so getAnswer() returns '' after cancellation
       this.promptLabel.textContent = this.customPrompt;
       this.inputField.classList.remove('ext_kxTurboDev-input-shake');
       if (wasCommandBarDisabled) this._setCommandBarEnabled(false);
@@ -1986,6 +1981,12 @@ class TurboDevExtension {
       }
     );
 
+    // Verbose Logging Toggle
+    this._addToggle(content, 'Verbose Logging', 'verboseLogging', this.verboseLogging, val => {
+      this.verboseLogging = val;
+      this._saveProjectSettings();
+    });
+
     // Font Size Input
     this._addNumberInput(
       content,
@@ -2571,8 +2572,8 @@ class TurboDevExtension {
     try {
       // If we are pending a query, capture this input
       if (this.pendingQuery) {
-        // Echo what user typed
-        this._addLine(text, '#9b59b6');
+        // Echo what user typed with a query-input tag
+        this._addTaggedLine('( > )', '#C678DD', null, null, text);
 
         let isValid = false;
         let parsed = null;
@@ -2964,8 +2965,49 @@ class TurboDevExtension {
 
   // --- Loading Group Logic ---
 
-  startLoading(args) {
-    const text = String(args.TEXT);
+  _getSpriteName(util) {
+    return (util && util.target && util.target.sprite && util.target.sprite.name) || '';
+  }
+
+  _addTaggedLine(icon, tagColor, serviceColor, spriteName, message) {
+    const line = document.createElement('div');
+    line.className = 'ext_kxTurboDev-terminal-line';
+
+    line.style.paddingLeft = `${this.indentLevel * 24}px`;
+
+    if (this.systemSettings.showTimestamps) {
+      this._appendTimestamp(line);
+    }
+
+    const tagSpan = document.createElement('span');
+    tagSpan.style.color = tagColor;
+    tagSpan.textContent = icon + ' ';
+    line.appendChild(tagSpan);
+
+    if (spriteName) {
+      const spriteSpan = document.createElement('span');
+      spriteSpan.style.color = serviceColor;
+      spriteSpan.textContent = spriteName + ': ';
+      line.appendChild(spriteSpan);
+    }
+
+    const msgSpan = document.createElement('span');
+    msgSpan.innerHTML = this._parseFormatting(message);
+    msgSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
+    line.appendChild(msgSpan);
+
+    this.outputContainer.appendChild(line);
+
+    while (this.outputContainer.children.length > 500) {
+      this.outputContainer.removeChild(this.outputContainer.firstChild);
+    }
+
+    if (this.isAutoScrolling) {
+      this._scrollToBottom();
+    }
+  }
+
+  _startLoadingGroup(spriteName, text) {
     const line = document.createElement('div');
     line.className =
       'ext_kxTurboDev-terminal-line ext_kxTurboDev-term-system ext_kxTurboDev-loader-sticky';
@@ -2978,25 +3020,34 @@ class TurboDevExtension {
 
     // Add Timestamp
     const timestampsEnabled = this.systemSettings.showTimestamps;
-    let startTime = null;
+    const startTime = new Date();
     if (timestampsEnabled) {
-      startTime = this._appendTimestamp(line);
+      this._appendTimestamp(line);
     }
 
-    // Spinner Element
+    // Spinner Element (acts as the tag icon)
     const spinnerSpan = document.createElement('span');
     spinnerSpan.style.fontFamily = 'monospace';
     spinnerSpan.style.display = 'inline-block';
     spinnerSpan.style.width = '14px';
     spinnerSpan.style.marginRight = '8px';
-    spinnerSpan.style.color = 'var(--ext_kxTurboDev-term-accent)'; // Changed to var
+    spinnerSpan.style.color = 'var(--ext_kxTurboDev-term-accent)';
     // Initial Frame (ASCII)
     spinnerSpan.textContent = this.ASCII_FRAMES[0];
+
+    line.appendChild(spinnerSpan);
+
+    if (spriteName) {
+      const spriteSpan = document.createElement('span');
+      spriteSpan.style.color = 'var(--ext_kxTurboDev-term-accent)';
+      spriteSpan.style.opacity = '0.6';
+      spriteSpan.textContent = spriteName + ': ';
+      line.appendChild(spriteSpan);
+    }
 
     const textSpan = document.createElement('span');
     textSpan.innerHTML = this._parseFormatting(text);
 
-    line.appendChild(spinnerSpan);
     line.appendChild(textSpan);
     this.outputContainer.appendChild(line);
 
@@ -3024,37 +3075,56 @@ class TurboDevExtension {
     this.indentLevel++;
   }
 
-  finishLoading(args) {
-    if (this.loaderStack.length === 0) return;
+  _finishLoadingGroup(icon, tagColor, serviceColor, spriteName, message) {
+    if (this.loaderStack.length === 0) return false;
 
     const loader = this.loaderStack.pop();
     clearInterval(loader.interval);
 
     // Remove sticky behavior
     loader.line.classList.remove('ext_kxTurboDev-loader-sticky');
-    loader.line.style.top = ''; // Reset top
+    loader.line.style.top = '';
 
     // Decrease indentation
     this.indentLevel = Math.max(0, this.indentLevel - 1);
 
-    // Update Tag & Icon
-    const isSuccess = args.STATUS === 'success';
+    // Replace the loader line in-place with the done/error tagged line format
+    loader.line.replaceChildren();
+    loader.line.className = 'ext_kxTurboDev-terminal-line';
 
-    // Update Spinner to Status Symbol (ASCII)
-    // OK or X
-    loader.spinner.textContent = isSuccess ? '[OK]' : '[X]';
-    loader.spinner.style.color = isSuccess ? '#2ecc71' : '#e74c3c';
-    loader.spinner.style.width = 'auto';
-    loader.spinner.style.marginRight = '8px';
-
-    // Append elapsed duration if timestamps were enabled when loader started
+    // Re-add the original start timestamp and elapsed duration
     if (loader.timestampsEnabled && loader.startTime) {
-      const elapsed = Date.now() - loader.startTime.getTime();
-      const durationSpan = document.createElement('span');
-      durationSpan.className = 'ext_kxTurboDev-log-time';
-      durationSpan.textContent = ` (${elapsed}ms)`;
-      loader.line.appendChild(durationSpan);
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'ext_kxTurboDev-log-time';
+      timeSpan.textContent = `[${loader.startTime.toLocaleTimeString('en-US', { hour12: false })}] `;
+      loader.line.appendChild(timeSpan);
     }
+
+    const tagSpan = document.createElement('span');
+    tagSpan.style.color = tagColor;
+    tagSpan.textContent = icon + ' ';
+    loader.line.appendChild(tagSpan);
+
+    if (spriteName) {
+      const spriteSpan = document.createElement('span');
+      spriteSpan.style.color = serviceColor;
+      spriteSpan.textContent = spriteName + ': ';
+      loader.line.appendChild(spriteSpan);
+    }
+
+    const msgSpan = document.createElement('span');
+    msgSpan.innerHTML = this._parseFormatting(message);
+    msgSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
+    loader.line.appendChild(msgSpan);
+
+    // Append elapsed duration (always shown since startTime is always captured)
+    const elapsed = Date.now() - loader.startTime.getTime();
+    const durationSpan = document.createElement('span');
+    durationSpan.className = 'ext_kxTurboDev-log-time';
+    durationSpan.textContent = ` (${elapsed}ms)`;
+    loader.line.appendChild(durationSpan);
+
+    return true;
   }
 
   // --- Block Implementations ---
@@ -3064,10 +3134,13 @@ class TurboDevExtension {
     this._handleCommand(String(args.COMMAND), echo);
   }
 
-  // Implements Ask and Wait Pattern
-  queryUser(args) {
-    const prompt = String(args.PROMPT);
+  queryText(args, util) {
+    // Settle any previous pending query before starting a new one
+    this._cancelPendingQuery();
+
+    const prompt = String(args.TEXT);
     const type = args.TYPE;
+    const sprite = this._getSpriteName(util);
 
     // Show terminal if hidden
     if (!this.isVisible) this.showTerminal();
@@ -3076,7 +3149,7 @@ class TurboDevExtension {
     const wasCommandBarDisabled = !this.commandBarEnabled;
     if (wasCommandBarDisabled) this._setCommandBarEnabled(true);
 
-    this._addLine(prompt, '#e67e22');
+    this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, prompt);
     this.promptLabel.textContent = '?'; // Visual cue
     this.inputField.focus(); // Focus input
 
@@ -3137,16 +3210,6 @@ class TurboDevExtension {
   hasFlag(args) {
     const name = String(args.NAME).trim().toLowerCase();
     return Object.prototype.hasOwnProperty.call(this.currentCommandFlags, name);
-  }
-
-  replySuccess(args) {
-    const msg = String(args.MSG);
-    this._addLine(`@c #2ecc71:[✔] ${msg}@c`);
-  }
-
-  replyError(args) {
-    const msg = String(args.MSG);
-    this._addLine(`@c #e74c3c:[✘] ${msg}@c`);
   }
 
   whenCommandReceived() {
@@ -3366,6 +3429,42 @@ class TurboDevExtension {
   printText(args) {
     // Ensure string conversion to prevent crashes if input is null/undefined
     this._addLine(String(args.TEXT));
+  }
+
+  logText(args, util) {
+    const type = String(args.TYPE);
+    const text = String(args.TEXT);
+    const sprite = this._getSpriteName(util);
+    switch (type) {
+      case 'hint':
+        this._addTaggedLine('[ i ]', '#56B6C2', '#3E8A93', sprite, text);
+        break;
+      case 'warn':
+        this._addTaggedLine('[ ! ]', '#E5C07B', '#B3965D', sprite, text);
+        break;
+      case 'error':
+        if (!this._finishLoadingGroup('[ X ]', '#E06C75', '#B0555C', sprite, text)) {
+          this._addTaggedLine('[ X ]', '#E06C75', '#B0555C', sprite, text);
+        }
+        break;
+      case 'verbose':
+        if (!this.verboseLogging) return;
+        this._addTaggedLine('( . )', '#5C6370', '#444B56', sprite, text);
+        break;
+      case 'done':
+        if (!this._finishLoadingGroup('[ # ]', '#A6E22E', '#7EAD23', sprite, text)) {
+          this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, text);
+        }
+        break;
+      case 'load':
+        this._startLoadingGroup(sprite, text);
+        break;
+      case 'headless':
+        this._addLine(text);
+        break;
+      default:
+        this._addTaggedLine('( i )', '#61AFEF', '#4A89C5', sprite, text);
+    }
   }
 
   setPrompt(args) {
