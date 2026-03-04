@@ -1044,6 +1044,11 @@ class TurboDevExtension {
     if (this.scrollReqId) cancelAnimationFrame(this.scrollReqId);
     this._stopPerfLoop();
 
+    this.loaderStack.forEach(l => clearInterval(l.interval));
+    this.loaderStack = [];
+    this._collapsedGroups.clear();
+    this._groupCounter = 0;
+
     this.isPerfMode = false;
     this.isVisible = false;
 
@@ -3025,7 +3030,10 @@ class TurboDevExtension {
 
     // Limit line count to 500 to prevent lag
     while (this.outputContainer.children.length > 500) {
-      this.outputContainer.removeChild(this.outputContainer.firstChild);
+      const evicted = this.outputContainer.firstChild;
+      const groupId = evicted && evicted.getAttribute && evicted.getAttribute('data-group-id');
+      if (groupId) this._collapsedGroups.delete(groupId);
+      this.outputContainer.removeChild(evicted);
     }
 
     // Only auto-scroll if at bottom
@@ -3074,7 +3082,10 @@ class TurboDevExtension {
     this.outputContainer.appendChild(line);
 
     while (this.outputContainer.children.length > 500) {
-      this.outputContainer.removeChild(this.outputContainer.firstChild);
+      const evicted = this.outputContainer.firstChild;
+      const groupId = evicted && evicted.getAttribute && evicted.getAttribute('data-group-id');
+      if (groupId) this._collapsedGroups.delete(groupId);
+      this.outputContainer.removeChild(evicted);
     }
 
     if (this.isAutoScrolling) {
@@ -3162,6 +3173,14 @@ class TurboDevExtension {
 
     this.outputContainer.appendChild(line);
 
+    // Enforce 500-line cap (same as _addLine / _addTaggedLine)
+    while (this.outputContainer.children.length > 500) {
+      const evicted = this.outputContainer.firstChild;
+      const gid = evicted && evicted.getAttribute && evicted.getAttribute('data-group-id');
+      if (gid) this._collapsedGroups.delete(gid);
+      this.outputContainer.removeChild(evicted);
+    }
+
     if (this.isAutoScrolling) {
       this._scrollToBottom();
     }
@@ -3219,6 +3238,8 @@ class TurboDevExtension {
     // Replace the loader line in-place with the done/error tagged line format
     loader.line.replaceChildren();
     loader.line.className = 'ext_kxTurboDev-terminal-line';
+    // Tag the finished group line so eviction can purge its collapse state
+    loader.line.setAttribute('data-group-id', loader.groupId);
 
     // Re-add the original start timestamp and elapsed duration
     if (loader.timestampsEnabled && loader.startTime) {
@@ -3255,8 +3276,10 @@ class TurboDevExtension {
     // Add collapse/expand toggle for child lines
     const groupId = loader.groupId;
     const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
     toggleBtn.className = 'ext_kxTurboDev-group-toggle';
     toggleBtn.title = 'Expand/collapse group logs';
+    toggleBtn.setAttribute('aria-label', 'Expand/collapse group logs');
     toggleBtn.textContent = '▸';
     loader.line.appendChild(toggleBtn);
 
