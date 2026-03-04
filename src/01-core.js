@@ -409,6 +409,31 @@ const STYLES = `
           padding-bottom: 4px;
           backdrop-filter: blur(4px);
       }
+
+      /* Loading Group Progress Bar */
+      .ext_kxTurboDev-loader-progress {
+          margin-left: 8px;
+          font-family: monospace;
+          font-size: 11px;
+          opacity: 0.7;
+          flex-shrink: 0;
+      }
+
+      /* Loading Group Collapse Toggle */
+      .ext_kxTurboDev-group-toggle {
+          cursor: pointer;
+          opacity: 0.55;
+          font-size: 11px;
+          user-select: none;
+          flex-shrink: 0;
+          background: none;
+          border: none;
+          color: inherit;
+          padding: 0 2px;
+          font-family: inherit;
+          line-height: 1;
+      }
+      .ext_kxTurboDev-group-toggle:hover { opacity: 1; }
   
       .ext_kxTurboDev-terminal-input-area {
           display: flex;
@@ -903,6 +928,8 @@ class TurboDevExtension {
     this.indentLevel = 0;
     this.loaderStack = [];
     this.ASCII_FRAMES = ['|', '/', '-', '\\'];
+    this._groupCounter = 0;
+    this._collapsedGroups = new Set();
 
     // Caps
     this.MAX_HISTORY = 50;
@@ -929,6 +956,9 @@ class TurboDevExtension {
     this.getFlag = this.getFlag.bind(this);
     this.hasFlag = this.hasFlag.bind(this);
     this.getNamedArg = this.getNamedArg.bind(this);
+    this.setLoadingStep = this.setLoadingStep.bind(this);
+    this.setLoadingMaxSteps = this.setLoadingMaxSteps.bind(this);
+    this.changeLoadingStep = this.changeLoadingStep.bind(this);
 
     this._loadSettings();
     this._loadProjectSettings();
@@ -992,6 +1022,13 @@ class TurboDevExtension {
     if (this.cliReqId) cancelAnimationFrame(this.cliReqId);
     if (this.scrollReqId) cancelAnimationFrame(this.scrollReqId);
     this._stopPerfLoop();
+
+    for (const l of this.loaderStack) {
+      clearInterval(l.interval);
+    }
+    this.loaderStack = [];
+    this._collapsedGroups.clear();
+    this._groupCounter = 0;
 
     this.isPerfMode = false;
     this.isVisible = false;
@@ -1093,6 +1130,30 @@ class TurboDevExtension {
           arguments: {
             TYPE: { type: Scratch.ArgumentType.STRING, menu: 'LOG_LEVELS', defaultValue: 'log' },
             TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'System Ready...' },
+          },
+        },
+        {
+          opcode: 'setLoadingStep',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set loading step to [STEP]',
+          arguments: {
+            STEP: { type: Scratch.ArgumentType.NUMBER, defaultValue: 1 },
+          },
+        },
+        {
+          opcode: 'setLoadingMaxSteps',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set loading max steps to [STEPS]',
+          arguments: {
+            STEPS: { type: Scratch.ArgumentType.NUMBER, defaultValue: 10 },
+          },
+        },
+        {
+          opcode: 'changeLoadingStep',
+          blockType: Scratch.BlockType.COMMAND,
+          text: '[DIRECTION] step counter',
+          arguments: {
+            DIRECTION: { type: Scratch.ArgumentType.STRING, menu: 'STEP_DIRECTION', defaultValue: 'increase' },
           },
         },
         {
@@ -1347,6 +1408,10 @@ class TurboDevExtension {
         },
       ],
       menus: {
+        STEP_DIRECTION: {
+          acceptReporters: true,
+          items: ['increase', 'decrease'],
+        },
         YES_NO: {
           acceptReporters: true,
           items: ['yes', 'no'],
@@ -2929,12 +2994,29 @@ class TurboDevExtension {
     return now;
   }
 
+  // Returns the first child of outputContainer that is safe to evict (not an
+  // active loader line currently tracked by loaderStack). Pass the caller's
+  // pre-built activeLines Set so we only build it once per eviction session.
+  _firstEvictable(activeLines) {
+    const children = this.outputContainer.children;
+    for (let i = 0; i < children.length; i++) {
+      if (!activeLines.has(children[i])) {
+        return children[i];
+      }
+    }
+    return null;
+  }
+
   _addLine(text, baseColor = 'var(--ext_kxTurboDev-term-text)') {
     const line = document.createElement('div');
     line.className = 'ext_kxTurboDev-terminal-line';
 
     // Add Indentation
     line.style.paddingLeft = `${this.indentLevel * 24}px`;
+
+    if (this.loaderStack.length > 0) {
+      line.setAttribute('data-ancestor-ids', this.loaderStack.map(l => l.groupId).join(' '));
+    }
 
     // Add Timestamp
     if (this.systemSettings.showTimestamps) {
@@ -2952,9 +3034,16 @@ class TurboDevExtension {
 
     this.outputContainer.appendChild(line);
 
-    // Limit line count to 500 to prevent lag
-    while (this.outputContainer.children.length > 500) {
-      this.outputContainer.removeChild(this.outputContainer.firstChild);
+    // Limit line count to 500 to prevent lag (never evict active loader lines)
+    if (this.outputContainer.children.length > 500) {
+      const activeLines = new Set(this.loaderStack.map(l => l.line));
+      while (this.outputContainer.children.length > 500) {
+        const evicted = this._firstEvictable(activeLines);
+        if (!evicted) break;
+        const groupId = evicted.getAttribute && evicted.getAttribute('data-group-id');
+        if (groupId) this._collapsedGroups.delete(groupId);
+        this.outputContainer.removeChild(evicted);
+      }
     }
 
     // Only auto-scroll if at bottom
@@ -2974,6 +3063,10 @@ class TurboDevExtension {
     line.className = 'ext_kxTurboDev-terminal-line';
 
     line.style.paddingLeft = `${this.indentLevel * 24}px`;
+
+    if (this.loaderStack.length > 0) {
+      line.setAttribute('data-ancestor-ids', this.loaderStack.map(l => l.groupId).join(' '));
+    }
 
     if (this.systemSettings.showTimestamps) {
       this._appendTimestamp(line);
@@ -2998,8 +3091,15 @@ class TurboDevExtension {
 
     this.outputContainer.appendChild(line);
 
-    while (this.outputContainer.children.length > 500) {
-      this.outputContainer.removeChild(this.outputContainer.firstChild);
+    if (this.outputContainer.children.length > 500) {
+      const activeLines = new Set(this.loaderStack.map(l => l.line));
+      while (this.outputContainer.children.length > 500) {
+        const evicted = this._firstEvictable(activeLines);
+        if (!evicted) break;
+        const groupId = evicted.getAttribute && evicted.getAttribute('data-group-id');
+        if (groupId) this._collapsedGroups.delete(groupId);
+        this.outputContainer.removeChild(evicted);
+      }
     }
 
     if (this.isAutoScrolling) {
@@ -3007,10 +3107,26 @@ class TurboDevExtension {
     }
   }
 
+  _updateGroupVisibility() {
+    this.outputContainer.querySelectorAll('[data-ancestor-ids]').forEach(el => {
+      const ids = el.getAttribute('data-ancestor-ids').split(' ');
+      const hidden = ids.some(id => this._collapsedGroups.has(id));
+      el.style.display = hidden ? 'none' : '';
+    });
+  }
+
   _startLoadingGroup(spriteName, text) {
     const line = document.createElement('div');
     line.className =
       'ext_kxTurboDev-terminal-line ext_kxTurboDev-term-system ext_kxTurboDev-loader-sticky';
+
+    // Generate unique group ID
+    const groupId = `grp${++this._groupCounter}`;
+
+    // Mark loader line as child of its parent loader (if nested)
+    if (this.loaderStack.length > 0) {
+      line.setAttribute('data-ancestor-ids', this.loaderStack.map(l => l.groupId).join(' '));
+    }
 
     // Apply indentation
     line.style.paddingLeft = `${this.indentLevel * 24}px`;
@@ -3049,7 +3165,27 @@ class TurboDevExtension {
     textSpan.innerHTML = this._parseFormatting(text);
 
     line.appendChild(textSpan);
+
+    // Progress bar (text-based, hidden until maxSteps > 0)
+    const progressSpan = document.createElement('span');
+    progressSpan.className = 'ext_kxTurboDev-loader-progress';
+    progressSpan.style.display = 'none';
+    line.appendChild(progressSpan);
+
     this.outputContainer.appendChild(line);
+
+    // Enforce 500-line cap (same as _addLine / _addTaggedLine; never evict active loader lines)
+    if (this.outputContainer.children.length > 500) {
+      // Include `line` itself since it's not yet on loaderStack
+      const activeLines = new Set([...this.loaderStack.map(l => l.line), line]);
+      while (this.outputContainer.children.length > 500) {
+        const evicted = this._firstEvictable(activeLines);
+        if (!evicted) break;
+        const gid = evicted.getAttribute && evicted.getAttribute('data-group-id');
+        if (gid) this._collapsedGroups.delete(gid);
+        this.outputContainer.removeChild(evicted);
+      }
+    }
 
     if (this.isAutoScrolling) {
       this._scrollToBottom();
@@ -3069,10 +3205,27 @@ class TurboDevExtension {
       interval: interval,
       startTime: startTime,
       timestampsEnabled: timestampsEnabled,
+      groupId: groupId,
+      step: 0,
+      maxSteps: 0,
+      progressSpan: progressSpan,
     });
 
     // Increase indentation for subsequent logs
     this.indentLevel++;
+  }
+
+  _updateLoadingProgress(loader) {
+    if (loader.maxSteps <= 0) {
+      loader.progressSpan.style.display = 'none';
+      return;
+    }
+    const pct = Math.min(100, Math.round((loader.step / loader.maxSteps) * 100));
+    const total = 20;
+    const filled = Math.round((pct / 100) * total);
+    const bar = '\u2588'.repeat(filled) + '\u2592'.repeat(total - filled);
+    loader.progressSpan.textContent = `${bar} ${pct}%`;
+    loader.progressSpan.style.display = '';
   }
 
   _finishLoadingGroup(icon, tagColor, serviceColor, spriteName, message) {
@@ -3091,6 +3244,8 @@ class TurboDevExtension {
     // Replace the loader line in-place with the done/error tagged line format
     loader.line.replaceChildren();
     loader.line.className = 'ext_kxTurboDev-terminal-line';
+    // Tag the finished group line so eviction can purge its collapse state
+    loader.line.setAttribute('data-group-id', loader.groupId);
 
     // Re-add the original start timestamp and elapsed duration
     if (loader.timestampsEnabled && loader.startTime) {
@@ -3123,6 +3278,34 @@ class TurboDevExtension {
     durationSpan.className = 'ext_kxTurboDev-log-time';
     durationSpan.textContent = ` (${elapsed}ms)`;
     loader.line.appendChild(durationSpan);
+
+    // Add collapse/expand toggle for child lines
+    const groupId = loader.groupId;
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'ext_kxTurboDev-group-toggle';
+    toggleBtn.title = 'Expand/collapse group logs';
+    toggleBtn.setAttribute('aria-label', 'Expand/collapse group logs');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.textContent = '▸';
+    loader.line.appendChild(toggleBtn);
+
+    // Collapse children immediately on finish
+    this._collapsedGroups.add(groupId);
+    this._updateGroupVisibility();
+
+    toggleBtn.addEventListener('click', () => {
+      if (this._collapsedGroups.has(groupId)) {
+        this._collapsedGroups.delete(groupId);
+        toggleBtn.textContent = '▾';
+        toggleBtn.setAttribute('aria-expanded', 'true');
+      } else {
+        this._collapsedGroups.add(groupId);
+        toggleBtn.textContent = '▸';
+        toggleBtn.setAttribute('aria-expanded', 'false');
+      }
+      this._updateGroupVisibility();
+    });
 
     return true;
   }
@@ -3421,6 +3604,8 @@ class TurboDevExtension {
     this.indentLevel = 0;
     this.loaderStack.forEach(l => clearInterval(l.interval));
     this.loaderStack = [];
+    this._collapsedGroups.clear();
+    this._groupCounter = 0;
 
     // Safety: Resolve any pending query
     this._cancelPendingQuery();
@@ -3472,6 +3657,31 @@ class TurboDevExtension {
     if (this.promptLabel) {
       this.promptLabel.textContent = this.customPrompt;
     }
+  }
+
+  setLoadingStep(args) {
+    if (this.loaderStack.length === 0) return;
+    const loader = this.loaderStack[this.loaderStack.length - 1];
+    loader.step = Math.max(0, Number(args.STEP) || 0);
+    this._updateLoadingProgress(loader);
+  }
+
+  setLoadingMaxSteps(args) {
+    if (this.loaderStack.length === 0) return;
+    const loader = this.loaderStack[this.loaderStack.length - 1];
+    loader.maxSteps = Math.max(0, Number(args.STEPS) || 0);
+    this._updateLoadingProgress(loader);
+  }
+
+  changeLoadingStep(args) {
+    if (this.loaderStack.length === 0) return;
+    const loader = this.loaderStack[this.loaderStack.length - 1];
+    if (String(args.DIRECTION).toLowerCase() === 'decrease') {
+      loader.step = Math.max(0, loader.step - 1);
+    } else {
+      loader.step = loader.maxSteps > 0 ? Math.min(loader.maxSteps, loader.step + 1) : loader.step + 1;
+    }
+    this._updateLoadingProgress(loader);
   }
 
   getLastCommand() {
