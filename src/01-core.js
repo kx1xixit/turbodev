@@ -1022,7 +1022,9 @@ class TurboDevExtension {
     if (this.scrollReqId) cancelAnimationFrame(this.scrollReqId);
     this._stopPerfLoop();
 
-    this.loaderStack.forEach(l => clearInterval(l.interval));
+    for (const l of this.loaderStack) {
+      clearInterval(l.interval);
+    }
     this.loaderStack = [];
     this._collapsedGroups.clear();
     this._groupCounter = 0;
