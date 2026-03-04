@@ -1053,11 +1053,15 @@ class TurboDevExtension {
         {
           opcode: 'runCommand',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'run command [COMMAND]',
+          text: 'run command [COMMAND] echo to log [ECHO]',
           arguments: {
             COMMAND: {
               type: Scratch.ArgumentType.STRING,
               defaultValue: 'help',
+            },
+            ECHO: {
+              type: Scratch.ArgumentType.BOOLEAN,
+              defaultValue: 'false',
             },
           },
         },
@@ -2544,7 +2548,7 @@ class TurboDevExtension {
     this._scrollToBottom();
   }
 
-  _handleCommand(text) {
+  _handleCommand(text, echo = true) {
     // Hard Limit on Input Length
     if (text.length > 512) {
       this._addLine(`@c #e74c3c:Error: Input too long (max 512 chars).@c`);
@@ -2620,8 +2624,8 @@ class TurboDevExtension {
       }
 
       // Standard Command Logic
-      // Echo command with USER tag
-      this._addLine(`${this.promptLabel.textContent} ${text}`, '#9b59b6');
+      // Echo command with USER tag (only when echo is enabled)
+      if (echo) this._addLine(`${this.promptLabel.textContent} ${text}`, '#9b59b6');
 
       // Store History
       this.commandHistory.push(text);
@@ -3051,7 +3055,8 @@ class TurboDevExtension {
   // --- Block Implementations ---
 
   runCommand(args) {
-    this._handleCommand(String(args.COMMAND));
+    const echo = args.ECHO === true || args.ECHO === 'true';
+    this._handleCommand(String(args.COMMAND), echo);
   }
 
   // Implements Ask and Wait Pattern
