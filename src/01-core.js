@@ -1047,7 +1047,10 @@ class TurboDevExtension {
 
   _saveProjectSettings() {
     try {
-      localStorage.setItem(this._getProjectKey(), JSON.stringify({ verboseLogging: this.verboseLogging }));
+      localStorage.setItem(
+        this._getProjectKey(),
+        JSON.stringify({ verboseLogging: this.verboseLogging })
+      );
     } catch (e) {
       console.warn('TurboDev: Failed to save project settings', e);
     }
@@ -1978,16 +1981,10 @@ class TurboDevExtension {
     );
 
     // Verbose Logging Toggle
-    this._addToggle(
-      content,
-      'Verbose Logging',
-      'verboseLogging',
-      this.verboseLogging,
-      val => {
-        this.verboseLogging = val;
-        this._saveProjectSettings();
-      }
-    );
+    this._addToggle(content, 'Verbose Logging', 'verboseLogging', this.verboseLogging, val => {
+      this.verboseLogging = val;
+      this._saveProjectSettings();
+    });
 
     // Font Size Input
     this._addNumberInput(
