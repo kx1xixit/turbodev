@@ -897,6 +897,9 @@ class TurboDevExtension {
     // Hybrid Trigger for Hat Block
     this._triggerHat = false;
 
+    // Verbose logging toggle (per-project)
+    this.verboseLogging = false;
+
     this.indentLevel = 0;
     this.loaderStack = [];
     this.ASCII_FRAMES = ['|', '/', '-', '\\'];
@@ -911,7 +914,14 @@ class TurboDevExtension {
     this.boundCliScroll = this._onCliScroll.bind(this);
 
     // CRITICAL FIX: Bind block methods to 'this'
-    this.printText = this.printText.bind(this);
+    this.logText = this.logText.bind(this);
+    this.hintText = this.hintText.bind(this);
+    this.warnText = this.warnText.bind(this);
+    this.errorText = this.errorText.bind(this);
+    this.verboseText = this.verboseText.bind(this);
+    this.doneText = this.doneText.bind(this);
+    this.queryLog = this.queryLog.bind(this);
+    this.loadLog = this.loadLog.bind(this);
     this.getLastCommand = this.getLastCommand.bind(this);
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
@@ -930,6 +940,7 @@ class TurboDevExtension {
     this.getNamedArg = this.getNamedArg.bind(this);
 
     this._loadSettings();
+    this._loadProjectSettings();
     this._createUI();
     this._setupGlobalHotkeys();
 
@@ -1024,6 +1035,30 @@ class TurboDevExtension {
       localStorage.setItem('ext_kxTurboDev_settings', JSON.stringify(this.systemSettings));
     } catch (e) {
       console.warn('TurboDev: Failed to save settings', e);
+    }
+  }
+
+  _getProjectKey() {
+    return `ext_kxTurboDev_proj_${window.location.pathname}`;
+  }
+
+  _loadProjectSettings() {
+    try {
+      const stored = localStorage.getItem(this._getProjectKey());
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        this.verboseLogging = !!parsed.verboseLogging;
+      }
+    } catch (e) {
+      console.warn('TurboDev: Failed to load project settings', e);
+    }
+  }
+
+  _saveProjectSettings() {
+    try {
+      localStorage.setItem(this._getProjectKey(), JSON.stringify({ verboseLogging: this.verboseLogging }));
+    } catch (e) {
+      console.warn('TurboDev: Failed to save project settings', e);
     }
   }
 
@@ -1243,11 +1278,67 @@ class TurboDevExtension {
         },
         '---',
         {
-          opcode: 'printText',
+          opcode: 'logText',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'print [TEXT]',
+          text: 'log [TEXT]',
           arguments: {
             TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'System Ready...' },
+          },
+        },
+        {
+          opcode: 'hintText',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'hint [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Try pressing Tab.' },
+          },
+        },
+        {
+          opcode: 'warnText',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'warn [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Low health!' },
+          },
+        },
+        {
+          opcode: 'errorText',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'error [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'File not found.' },
+          },
+        },
+        {
+          opcode: 'verboseText',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'verbose [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Frame tick.' },
+          },
+        },
+        {
+          opcode: 'doneText',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'done [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Level loaded.' },
+          },
+        },
+        {
+          opcode: 'queryLog',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'query [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Waiting for input.' },
+          },
+        },
+        {
+          opcode: 'loadLog',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'load [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Fetching data...' },
           },
         },
         {
@@ -1983,6 +2074,18 @@ class TurboDevExtension {
       val => {
         this.systemSettings.showTimestamps = val;
         this._saveSettings();
+      }
+    );
+
+    // Verbose Logging Toggle
+    this._addToggle(
+      content,
+      'Verbose Logging',
+      'verboseLogging',
+      this.verboseLogging,
+      val => {
+        this.verboseLogging = val;
+        this._saveProjectSettings();
       }
     );
 
@@ -2964,6 +3067,46 @@ class TurboDevExtension {
 
   // --- Loading Group Logic ---
 
+  _getSpriteName(util) {
+    return (util && util.target && util.target.sprite && util.target.sprite.name) || 'Unknown';
+  }
+
+  _addTaggedLine(icon, tagColor, serviceColor, spriteName, message) {
+    const line = document.createElement('div');
+    line.className = 'ext_kxTurboDev-terminal-line';
+
+    line.style.paddingLeft = `${this.indentLevel * 24}px`;
+
+    if (this.systemSettings.showTimestamps) {
+      this._appendTimestamp(line);
+    }
+
+    const tagSpan = document.createElement('span');
+    tagSpan.style.color = tagColor;
+    tagSpan.textContent = icon + ' ';
+    line.appendChild(tagSpan);
+
+    const spriteSpan = document.createElement('span');
+    spriteSpan.style.color = serviceColor;
+    spriteSpan.textContent = spriteName + ': ';
+    line.appendChild(spriteSpan);
+
+    const msgSpan = document.createElement('span');
+    msgSpan.innerHTML = this._parseFormatting(message);
+    msgSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
+    line.appendChild(msgSpan);
+
+    this.outputContainer.appendChild(line);
+
+    while (this.outputContainer.children.length > 500) {
+      this.outputContainer.removeChild(this.outputContainer.firstChild);
+    }
+
+    if (this.isAutoScrolling) {
+      this._scrollToBottom();
+    }
+  }
+
   startLoading(args) {
     const text = String(args.TEXT);
     const line = document.createElement('div');
@@ -3366,6 +3509,47 @@ class TurboDevExtension {
   printText(args) {
     // Ensure string conversion to prevent crashes if input is null/undefined
     this._addLine(String(args.TEXT));
+  }
+
+  logText(args, util) {
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('( i )', '#61AFEF', '#4A89C5', sprite, String(args.TEXT));
+  }
+
+  hintText(args, util) {
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('[ i ]', '#56B6C2', '#3E8A93', sprite, String(args.TEXT));
+  }
+
+  warnText(args, util) {
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('[ ! ]', '#E5C07B', '#B3965D', sprite, String(args.TEXT));
+  }
+
+  errorText(args, util) {
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('[ X ]', '#E06C75', '#B0555C', sprite, String(args.TEXT));
+  }
+
+  verboseText(args, util) {
+    if (!this.verboseLogging) return;
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('( . )', '#5C6370', '#444B56', sprite, String(args.TEXT));
+  }
+
+  doneText(args, util) {
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, String(args.TEXT));
+  }
+
+  queryLog(args, util) {
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, String(args.TEXT));
+  }
+
+  loadLog(args, util) {
+    const sprite = this._getSpriteName(util);
+    this._addTaggedLine('{ ~ }', '#B48EAD', '#8C6D87', sprite, String(args.TEXT));
   }
 
   setPrompt(args) {
