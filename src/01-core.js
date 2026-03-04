@@ -3599,8 +3599,10 @@ class TurboDevExtension {
     // Strip optional leading '--' and validate against the same regex as _parseFlags
     const rawName = String(args.NAME).trim().replace(/^--/, '').toLowerCase();
     if (!FLAG_NAME_RE.test(rawName)) {
+      const displayName = String(args.NAME).trim().replace(/@/g, '');
       this._addLine(
-        `@c #f1c40f:Warning: '${String(args.NAME).trim()}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).@c`
+        `Warning: '${displayName}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).`,
+        '#f1c40f'
       );
       return;
     }
@@ -3625,8 +3627,10 @@ class TurboDevExtension {
     // Strip optional leading '--' and validate against the same regex as _parseFlags
     const rawName = String(args.NAME).trim().replace(/^--/, '').toLowerCase();
     if (!FLAG_NAME_RE.test(rawName)) {
+      const displayName = String(args.NAME).trim().replace(/@/g, '');
       this._addLine(
-        `@c #f1c40f:Warning: '${String(args.NAME).trim()}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).@c`
+        `Warning: '${displayName}' is not a valid flag name. Use letters, digits, and hyphens only (must start with a letter or digit).`,
+        '#f1c40f'
       );
       return;
     }
