@@ -2994,6 +2994,19 @@ class TurboDevExtension {
     return now;
   }
 
+  // Returns the first child of outputContainer that is safe to evict (not an
+  // active loader line currently tracked by loaderStack). Pass the caller's
+  // pre-built activeLines Set so we only build it once per eviction session.
+  _firstEvictable(activeLines) {
+    const children = this.outputContainer.children;
+    for (let i = 0; i < children.length; i++) {
+      if (!activeLines.has(children[i])) {
+        return children[i];
+      }
+    }
+    return null;
+  }
+
   _addLine(text, baseColor = 'var(--ext_kxTurboDev-term-text)') {
     const line = document.createElement('div');
     line.className = 'ext_kxTurboDev-terminal-line';
@@ -3021,12 +3034,16 @@ class TurboDevExtension {
 
     this.outputContainer.appendChild(line);
 
-    // Limit line count to 500 to prevent lag
-    while (this.outputContainer.children.length > 500) {
-      const evicted = this.outputContainer.firstChild;
-      const groupId = evicted && evicted.getAttribute && evicted.getAttribute('data-group-id');
-      if (groupId) this._collapsedGroups.delete(groupId);
-      this.outputContainer.removeChild(evicted);
+    // Limit line count to 500 to prevent lag (never evict active loader lines)
+    if (this.outputContainer.children.length > 500) {
+      const activeLines = new Set(this.loaderStack.map(l => l.line));
+      while (this.outputContainer.children.length > 500) {
+        const evicted = this._firstEvictable(activeLines);
+        if (!evicted) break;
+        const groupId = evicted.getAttribute && evicted.getAttribute('data-group-id');
+        if (groupId) this._collapsedGroups.delete(groupId);
+        this.outputContainer.removeChild(evicted);
+      }
     }
 
     // Only auto-scroll if at bottom
@@ -3074,11 +3091,15 @@ class TurboDevExtension {
 
     this.outputContainer.appendChild(line);
 
-    while (this.outputContainer.children.length > 500) {
-      const evicted = this.outputContainer.firstChild;
-      const groupId = evicted && evicted.getAttribute && evicted.getAttribute('data-group-id');
-      if (groupId) this._collapsedGroups.delete(groupId);
-      this.outputContainer.removeChild(evicted);
+    if (this.outputContainer.children.length > 500) {
+      const activeLines = new Set(this.loaderStack.map(l => l.line));
+      while (this.outputContainer.children.length > 500) {
+        const evicted = this._firstEvictable(activeLines);
+        if (!evicted) break;
+        const groupId = evicted.getAttribute && evicted.getAttribute('data-group-id');
+        if (groupId) this._collapsedGroups.delete(groupId);
+        this.outputContainer.removeChild(evicted);
+      }
     }
 
     if (this.isAutoScrolling) {
@@ -3153,12 +3174,17 @@ class TurboDevExtension {
 
     this.outputContainer.appendChild(line);
 
-    // Enforce 500-line cap (same as _addLine / _addTaggedLine)
-    while (this.outputContainer.children.length > 500) {
-      const evicted = this.outputContainer.firstChild;
-      const gid = evicted && evicted.getAttribute && evicted.getAttribute('data-group-id');
-      if (gid) this._collapsedGroups.delete(gid);
-      this.outputContainer.removeChild(evicted);
+    // Enforce 500-line cap (same as _addLine / _addTaggedLine; never evict active loader lines)
+    if (this.outputContainer.children.length > 500) {
+      // Include `line` itself since it's not yet on loaderStack
+      const activeLines = new Set([...this.loaderStack.map(l => l.line), line]);
+      while (this.outputContainer.children.length > 500) {
+        const evicted = this._firstEvictable(activeLines);
+        if (!evicted) break;
+        const gid = evicted.getAttribute && evicted.getAttribute('data-group-id');
+        if (gid) this._collapsedGroups.delete(gid);
+        this.outputContainer.removeChild(evicted);
+      }
     }
 
     if (this.isAutoScrolling) {
@@ -3260,6 +3286,7 @@ class TurboDevExtension {
     toggleBtn.className = 'ext_kxTurboDev-group-toggle';
     toggleBtn.title = 'Expand/collapse group logs';
     toggleBtn.setAttribute('aria-label', 'Expand/collapse group logs');
+    toggleBtn.setAttribute('aria-expanded', 'false');
     toggleBtn.textContent = '▸';
     loader.line.appendChild(toggleBtn);
 
@@ -3271,9 +3298,11 @@ class TurboDevExtension {
       if (this._collapsedGroups.has(groupId)) {
         this._collapsedGroups.delete(groupId);
         toggleBtn.textContent = '▾';
+        toggleBtn.setAttribute('aria-expanded', 'true');
       } else {
         this._collapsedGroups.add(groupId);
         toggleBtn.textContent = '▸';
+        toggleBtn.setAttribute('aria-expanded', 'false');
       }
       this._updateGroupVisibility();
     });
