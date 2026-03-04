@@ -918,7 +918,7 @@ class TurboDevExtension {
     this.getLastCommand = this.getLastCommand.bind(this);
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
-    this.queryUser = this.queryUser.bind(this);
+    this.queryText = this.queryText.bind(this);
     this.runCommand = this.runCommand.bind(this);
     this.getArgumentCount = this.getArgumentCount.bind(this);
     this.whenSpecificCommandReceived = this.whenSpecificCommandReceived.bind(this);
@@ -1094,11 +1094,11 @@ class TurboDevExtension {
         },
         '---',
         {
-          opcode: 'queryUser',
+          opcode: 'queryText',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'query user [PROMPT] expecting [TYPE]',
+          text: 'query [TEXT] expecting [TYPE]',
           arguments: {
-            PROMPT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Confirm action?' },
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Confirm action?' },
             TYPE: {
               type: Scratch.ArgumentType.STRING,
               menu: 'QUERY_TYPES',
@@ -1349,7 +1349,7 @@ class TurboDevExtension {
         },
         LOG_LEVELS: {
           acceptReporters: true,
-          items: ['log', 'hint', 'warn', 'error', 'verbose', 'done', 'query', 'load'],
+          items: ['log', 'hint', 'warn', 'error', 'verbose', 'done', 'load'],
         },
         QUERY_TYPES: {
           acceptReporters: true,
@@ -3065,27 +3065,47 @@ class TurboDevExtension {
     this.indentLevel++;
   }
 
-  _finishLoadingGroup(isSuccess) {
-    if (this.loaderStack.length === 0) return;
+  _finishLoadingGroup(icon, tagColor, serviceColor, spriteName, message) {
+    if (this.loaderStack.length === 0) return false;
 
     const loader = this.loaderStack.pop();
     clearInterval(loader.interval);
 
     // Remove sticky behavior
     loader.line.classList.remove('ext_kxTurboDev-loader-sticky');
-    loader.line.style.top = ''; // Reset top
+    loader.line.style.top = '';
 
     // Decrease indentation
     this.indentLevel = Math.max(0, this.indentLevel - 1);
 
-    // Update Spinner to Status Symbol (ASCII)
-    // OK or X
-    loader.spinner.textContent = isSuccess ? '[OK]' : '[X]';
-    loader.spinner.style.color = isSuccess ? '#2ecc71' : '#e74c3c';
-    loader.spinner.style.width = 'auto';
-    loader.spinner.style.marginRight = '8px';
+    // Replace the loader line in-place with the done/error tagged line format
+    loader.line.replaceChildren();
+    loader.line.className = 'ext_kxTurboDev-terminal-line';
 
-    // Append elapsed duration if timestamps were enabled when loader started
+    // Re-add the original start timestamp and elapsed duration
+    if (loader.timestampsEnabled && loader.startTime) {
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'ext_kxTurboDev-log-time';
+      timeSpan.textContent = `[${loader.startTime.toLocaleTimeString('en-US', { hour12: false })}] `;
+      loader.line.appendChild(timeSpan);
+    }
+
+    const tagSpan = document.createElement('span');
+    tagSpan.style.color = tagColor;
+    tagSpan.textContent = icon + ' ';
+    loader.line.appendChild(tagSpan);
+
+    const spriteSpan = document.createElement('span');
+    spriteSpan.style.color = serviceColor;
+    spriteSpan.textContent = spriteName + ': ';
+    loader.line.appendChild(spriteSpan);
+
+    const msgSpan = document.createElement('span');
+    msgSpan.innerHTML = this._parseFormatting(message);
+    msgSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
+    loader.line.appendChild(msgSpan);
+
+    // Append elapsed duration
     if (loader.timestampsEnabled && loader.startTime) {
       const elapsed = Date.now() - loader.startTime.getTime();
       const durationSpan = document.createElement('span');
@@ -3093,6 +3113,8 @@ class TurboDevExtension {
       durationSpan.textContent = ` (${elapsed}ms)`;
       loader.line.appendChild(durationSpan);
     }
+
+    return true;
   }
 
   // --- Block Implementations ---
@@ -3102,10 +3124,10 @@ class TurboDevExtension {
     this._handleCommand(String(args.COMMAND), echo);
   }
 
-  // Implements Ask and Wait Pattern
-  queryUser(args) {
-    const prompt = String(args.PROMPT);
+  queryText(args, util) {
+    const prompt = String(args.TEXT);
     const type = args.TYPE;
+    const sprite = this._getSpriteName(util);
 
     // Show terminal if hidden
     if (!this.isVisible) this.showTerminal();
@@ -3114,7 +3136,7 @@ class TurboDevExtension {
     const wasCommandBarDisabled = !this.commandBarEnabled;
     if (wasCommandBarDisabled) this._setCommandBarEnabled(true);
 
-    this._addLine(prompt, '#e67e22');
+    this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, prompt);
     this.promptLabel.textContent = '?'; // Visual cue
     this.inputField.focus(); // Focus input
 
@@ -3408,19 +3430,18 @@ class TurboDevExtension {
         this._addTaggedLine('[ ! ]', '#E5C07B', '#B3965D', sprite, text);
         break;
       case 'error':
-        this._finishLoadingGroup(false);
-        this._addTaggedLine('[ X ]', '#E06C75', '#B0555C', sprite, text);
+        if (!this._finishLoadingGroup('[ X ]', '#E06C75', '#B0555C', sprite, text)) {
+          this._addTaggedLine('[ X ]', '#E06C75', '#B0555C', sprite, text);
+        }
         break;
       case 'verbose':
         if (!this.verboseLogging) return;
         this._addTaggedLine('( . )', '#5C6370', '#444B56', sprite, text);
         break;
       case 'done':
-        this._finishLoadingGroup(true);
-        this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, text);
-        break;
-      case 'query':
-        this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, text);
+        if (!this._finishLoadingGroup('[ # ]', '#A6E22E', '#7EAD23', sprite, text)) {
+          this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, text);
+        }
         break;
       case 'load':
         this._startLoadingGroup(text);
