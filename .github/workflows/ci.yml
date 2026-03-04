@@ -245,9 +245,8 @@ jobs:
           node -e "
             const m = require('./src/manifest.json');
             let failed = false;
-            // Restored literal '$' check from original security.yml
-            if (!/^[a-zA-Z][a-zA-Z0-9_]*\$/.test(m.id)) {
-              console.error(\`::error file=src/manifest.json::Invalid ID format: \"\${m.id}\". Must end with '$'.\`);
+            if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(m.id)) {
+              console.error(\`::error file=src/manifest.json::Invalid ID format: \"\${m.id}\". Must start with a letter and contain only letters, digits, or underscores.\`);
               failed = true;
             }
             if (!/^\d+\.\d+\.\d+/.test(m.version)) {

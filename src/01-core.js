@@ -1153,7 +1153,11 @@ class TurboDevExtension {
           blockType: Scratch.BlockType.COMMAND,
           text: '[DIRECTION] step counter',
           arguments: {
-            DIRECTION: { type: Scratch.ArgumentType.STRING, menu: 'STEP_DIRECTION', defaultValue: 'increase' },
+            DIRECTION: {
+              type: Scratch.ArgumentType.STRING,
+              menu: 'STEP_DIRECTION',
+              defaultValue: 'increase',
+            },
           },
         },
         {
@@ -3679,7 +3683,8 @@ class TurboDevExtension {
     if (String(args.DIRECTION).toLowerCase() === 'decrease') {
       loader.step = Math.max(0, loader.step - 1);
     } else {
-      loader.step = loader.maxSteps > 0 ? Math.min(loader.maxSteps, loader.step + 1) : loader.step + 1;
+      loader.step =
+        loader.maxSteps > 0 ? Math.min(loader.maxSteps, loader.step + 1) : loader.step + 1;
     }
     this._updateLoadingProgress(loader);
   }
