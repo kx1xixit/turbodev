@@ -3009,7 +3009,7 @@ class TurboDevExtension {
     }
   }
 
-  _startLoadingGroup(text) {
+  _startLoadingGroup(spriteName, text) {
     const line = document.createElement('div');
     line.className =
       'ext_kxTurboDev-terminal-line ext_kxTurboDev-term-system ext_kxTurboDev-loader-sticky';
@@ -3027,20 +3027,29 @@ class TurboDevExtension {
       startTime = this._appendTimestamp(line);
     }
 
-    // Spinner Element
+    // Spinner Element (acts as the tag icon)
     const spinnerSpan = document.createElement('span');
     spinnerSpan.style.fontFamily = 'monospace';
     spinnerSpan.style.display = 'inline-block';
     spinnerSpan.style.width = '14px';
     spinnerSpan.style.marginRight = '8px';
-    spinnerSpan.style.color = 'var(--ext_kxTurboDev-term-accent)'; // Changed to var
+    spinnerSpan.style.color = 'var(--ext_kxTurboDev-term-accent)';
     // Initial Frame (ASCII)
     spinnerSpan.textContent = this.ASCII_FRAMES[0];
+
+    line.appendChild(spinnerSpan);
+
+    if (spriteName) {
+      const spriteSpan = document.createElement('span');
+      spriteSpan.style.color = 'var(--ext_kxTurboDev-term-accent)';
+      spriteSpan.style.opacity = '0.6';
+      spriteSpan.textContent = spriteName + ': ';
+      line.appendChild(spriteSpan);
+    }
 
     const textSpan = document.createElement('span');
     textSpan.innerHTML = this._parseFormatting(text);
 
-    line.appendChild(spinnerSpan);
     line.appendChild(textSpan);
     this.outputContainer.appendChild(line);
 
@@ -3447,7 +3456,7 @@ class TurboDevExtension {
         }
         break;
       case 'load':
-        this._startLoadingGroup(text);
+        this._startLoadingGroup(sprite, text);
         break;
       default:
         this._addTaggedLine('( i )', '#61AFEF', '#4A89C5', sprite, text);
