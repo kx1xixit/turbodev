@@ -1350,7 +1350,7 @@ class TurboDevExtension {
         },
         LOG_LEVELS: {
           acceptReporters: true,
-          items: ['log', 'hint', 'warn', 'error', 'verbose', 'done', 'load'],
+          items: ['log', 'hint', 'warn', 'error', 'verbose', 'done', 'load', 'headless'],
         },
         QUERY_TYPES: {
           acceptReporters: true,
@@ -2968,7 +2968,7 @@ class TurboDevExtension {
   // --- Loading Group Logic ---
 
   _getSpriteName(util) {
-    return (util && util.target && util.target.sprite && util.target.sprite.name) || 'Unknown';
+    return (util && util.target && util.target.sprite && util.target.sprite.name) || '';
   }
 
   _addTaggedLine(icon, tagColor, serviceColor, spriteName, message) {
@@ -3022,9 +3022,9 @@ class TurboDevExtension {
 
     // Add Timestamp
     const timestampsEnabled = this.systemSettings.showTimestamps;
-    let startTime = null;
+    const startTime = new Date();
     if (timestampsEnabled) {
-      startTime = this._appendTimestamp(line);
+      this._appendTimestamp(line);
     }
 
     // Spinner Element (acts as the tag icon)
@@ -3107,24 +3107,24 @@ class TurboDevExtension {
     tagSpan.textContent = icon + ' ';
     loader.line.appendChild(tagSpan);
 
-    const spriteSpan = document.createElement('span');
-    spriteSpan.style.color = serviceColor;
-    spriteSpan.textContent = spriteName + ': ';
-    loader.line.appendChild(spriteSpan);
+    if (spriteName) {
+      const spriteSpan = document.createElement('span');
+      spriteSpan.style.color = serviceColor;
+      spriteSpan.textContent = spriteName + ': ';
+      loader.line.appendChild(spriteSpan);
+    }
 
     const msgSpan = document.createElement('span');
     msgSpan.innerHTML = this._parseFormatting(message);
     msgSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
     loader.line.appendChild(msgSpan);
 
-    // Append elapsed duration
-    if (loader.timestampsEnabled && loader.startTime) {
-      const elapsed = Date.now() - loader.startTime.getTime();
-      const durationSpan = document.createElement('span');
-      durationSpan.className = 'ext_kxTurboDev-log-time';
-      durationSpan.textContent = ` (${elapsed}ms)`;
-      loader.line.appendChild(durationSpan);
-    }
+    // Append elapsed duration (always shown since startTime is always captured)
+    const elapsed = Date.now() - loader.startTime.getTime();
+    const durationSpan = document.createElement('span');
+    durationSpan.className = 'ext_kxTurboDev-log-time';
+    durationSpan.textContent = ` (${elapsed}ms)`;
+    loader.line.appendChild(durationSpan);
 
     return true;
   }
@@ -3137,6 +3137,9 @@ class TurboDevExtension {
   }
 
   queryText(args, util) {
+    // Settle any previous pending query before starting a new one
+    this._cancelPendingQuery();
+
     const prompt = String(args.TEXT);
     const type = args.TYPE;
     const sprite = this._getSpriteName(util);
@@ -3457,6 +3460,9 @@ class TurboDevExtension {
         break;
       case 'load':
         this._startLoadingGroup(sprite, text);
+        break;
+      case 'headless':
+        this._addLine(text);
         break;
       default:
         this._addTaggedLine('( i )', '#61AFEF', '#4A89C5', sprite, text);
