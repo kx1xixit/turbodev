@@ -8,7 +8,7 @@ The entire extension is a single JavaScript file built from `src/01-core.js` and
 
 ## Repository Structure
 
-```
+```text
 src/
   01-core.js        # Main extension class — all blocks and logic live here
   manifest.json     # Extension metadata (name, id, version, author, license)
@@ -42,7 +42,7 @@ The CI pipeline runs lint, spellcheck, CodeQL, and build checks on every pull re
 ### File organization
 
 - Keep all block definitions and implementation in `src/01-core.js`.
-- The build script will concatenate any additional `src/NN-name.js` files in numeric order, but the project preference is to keep everything in `01-core.js`.
+- The build script will concatenate any additional `src/*.js` files in lexicographic order (prefix with numbers like `01-`, `02-` to control ordering), but the project preference is to keep everything in `01-core.js`.
 
 ### Adding a new block
 
@@ -52,21 +52,28 @@ The CI pipeline runs lint, spellcheck, CodeQL, and build checks on every pull re
 
 ### Boolean arguments
 
-Scratch/TurboWarp can pass boolean arguments as either the boolean `true` or the string `'true'`. Always handle both:
+Scratch/TurboWarp can pass boolean arguments as the boolean `true`, the string `'true'`, or (for `YES_NO` menus) the string `'yes'`. Always handle all of these:
 
 ```javascript
-const enabled = args.ENABLED === true || String(args.ENABLED).toLowerCase() === 'true';
+const value = String(args.ENABLED).toLowerCase();
+const enabled = args.ENABLED === true || value === 'true' || value === 'yes';
 ```
 
 ### Logging helpers
 
-- `_addLine(text, baseColor)` — appends a plain line; pass `baseColor` instead of embedding `@c` tags.
-- `_addTaggedLine(icon, tagColor, serviceColor, spriteName, message)` — appends a structured `[ TAG ] sprite: message` line.
-- `_getSpriteName(util)` — returns the current sprite name from the execution context.
+- `_addLine(text, baseColor)` — appends a line to the console; pass `baseColor` instead of embedding `@c` tags directly.
+- `_parseFormatting(text)` — parses TurboDev's inline markup (e.g. `@c`, `@h`, `@b`, `@i`) into HTML segments; called internally by `_addLine`.
 
-### Log block naming
+### Log block / opcode naming
 
-Level-specific log block methods follow the `*Text` suffix pattern: `logText`, `hintText`, `warnText`, `errorText`, `verboseText`, `doneText`, `queryText`, `loadText`.
+The main console-related opcodes exposed by `getInfo()` are:
+
+- `printText` — print a line of text to the console
+- `startLoading` — begin a loading / in-progress state
+- `finishLoading` — end a loading state
+- `replySuccess` — indicate a successful result
+- `replyError` — indicate an error result
+- `queryUser` — prompt the user for input
 
 ### Inline text styling
 
@@ -83,7 +90,7 @@ Never embed `@c` tags in user-provided text; pass colour via `baseColor` to avoi
 
 ### Extension metadata
 
-Update `src/manifest.json` when changing the extension name, version, or author. The `version` field must follow SemVer (`MAJOR.MINOR.PATCH`). The `id` field must end with `$` and consist of alphanumeric characters.
+Update `src/manifest.json` when changing the extension name, version, or author. The `version` field must follow SemVer (`MAJOR.MINOR.PATCH`). The `id` field must match `/^[a-zA-Z][a-zA-Z0-9_]*$/` (start with a letter, then letters, digits, or underscores only).
 
 ## PR & Commit Guidelines
 
