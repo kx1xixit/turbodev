@@ -915,20 +915,11 @@ class TurboDevExtension {
 
     // CRITICAL FIX: Bind block methods to 'this'
     this.logText = this.logText.bind(this);
-    this.hintText = this.hintText.bind(this);
-    this.warnText = this.warnText.bind(this);
-    this.errorText = this.errorText.bind(this);
-    this.verboseText = this.verboseText.bind(this);
-    this.doneText = this.doneText.bind(this);
-    this.queryText = this.queryText.bind(this);
-    this.loadText = this.loadText.bind(this);
     this.getLastCommand = this.getLastCommand.bind(this);
     this.getAnswer = this.getAnswer.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
     this.queryUser = this.queryUser.bind(this);
     this.runCommand = this.runCommand.bind(this);
-    this.replySuccess = this.replySuccess.bind(this);
-    this.replyError = this.replyError.bind(this);
     this.getArgumentCount = this.getArgumentCount.bind(this);
     this.whenSpecificCommandReceived = this.whenSpecificCommandReceived.bind(this);
     this.registerSubcommand = this.registerSubcommand.bind(this);
@@ -1280,85 +1271,10 @@ class TurboDevExtension {
         {
           opcode: 'logText',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'log [TEXT]',
+          text: 'log [TYPE] [TEXT]',
           arguments: {
+            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'LOG_LEVELS', defaultValue: 'log' },
             TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'System Ready...' },
-          },
-        },
-        {
-          opcode: 'hintText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'hint [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Try pressing Tab.' },
-          },
-        },
-        {
-          opcode: 'warnText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'warn [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Low health!' },
-          },
-        },
-        {
-          opcode: 'errorText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'error [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'File not found.' },
-          },
-        },
-        {
-          opcode: 'verboseText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'verbose [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Frame tick.' },
-          },
-        },
-        {
-          opcode: 'doneText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'done [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Level loaded.' },
-          },
-        },
-        {
-          opcode: 'queryText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'query [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Waiting for input.' },
-          },
-        },
-        {
-          opcode: 'loadText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'load [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Fetching data...' },
-          },
-        },
-        {
-          opcode: 'startLoading',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'start loading group [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'Loading assets...' },
-          },
-        },
-        {
-          opcode: 'finishLoading',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'finish loading group [STATUS]',
-          arguments: {
-            STATUS: {
-              type: Scratch.ArgumentType.STRING,
-              menu: 'LOADING_STATUS',
-              defaultValue: 'success',
-            },
           },
         },
         {
@@ -1367,23 +1283,6 @@ class TurboDevExtension {
           text: 'set prompt to [TEXT]',
           arguments: {
             TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: '>' },
-          },
-        },
-        '---',
-        {
-          opcode: 'replySuccess',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'reply with success [MSG]',
-          arguments: {
-            MSG: { type: Scratch.ArgumentType.STRING, defaultValue: 'Done!' },
-          },
-        },
-        {
-          opcode: 'replyError',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'reply with error [MSG]',
-          arguments: {
-            MSG: { type: Scratch.ArgumentType.STRING, defaultValue: 'Invalid arg!' },
           },
         },
         {
@@ -1448,9 +1347,9 @@ class TurboDevExtension {
           acceptReporters: true,
           items: ['yes', 'no'],
         },
-        LOADING_STATUS: {
+        LOG_LEVELS: {
           acceptReporters: true,
-          items: ['success', 'error'],
+          items: ['log', 'hint', 'warn', 'error', 'verbose', 'done', 'query', 'load'],
         },
         QUERY_TYPES: {
           acceptReporters: true,
@@ -3107,8 +3006,7 @@ class TurboDevExtension {
     }
   }
 
-  startLoading(args) {
-    const text = String(args.TEXT);
+  _startLoadingGroup(text) {
     const line = document.createElement('div');
     line.className =
       'ext_kxTurboDev-terminal-line ext_kxTurboDev-term-system ext_kxTurboDev-loader-sticky';
@@ -3167,7 +3065,7 @@ class TurboDevExtension {
     this.indentLevel++;
   }
 
-  finishLoading(args) {
+  _finishLoadingGroup(isSuccess) {
     if (this.loaderStack.length === 0) return;
 
     const loader = this.loaderStack.pop();
@@ -3179,9 +3077,6 @@ class TurboDevExtension {
 
     // Decrease indentation
     this.indentLevel = Math.max(0, this.indentLevel - 1);
-
-    // Update Tag & Icon
-    const isSuccess = args.STATUS === 'success';
 
     // Update Spinner to Status Symbol (ASCII)
     // OK or X
@@ -3280,16 +3175,6 @@ class TurboDevExtension {
   hasFlag(args) {
     const name = String(args.NAME).trim().toLowerCase();
     return Object.prototype.hasOwnProperty.call(this.currentCommandFlags, name);
-  }
-
-  replySuccess(args) {
-    const msg = String(args.MSG);
-    this._addLine(`@c #2ecc71:[✔] ${msg}@c`);
-  }
-
-  replyError(args) {
-    const msg = String(args.MSG);
-    this._addLine(`@c #e74c3c:[✘] ${msg}@c`);
   }
 
   whenCommandReceived() {
@@ -3512,44 +3397,37 @@ class TurboDevExtension {
   }
 
   logText(args, util) {
+    const type = String(args.TYPE);
+    const text = String(args.TEXT);
     const sprite = this._getSpriteName(util);
-    this._addTaggedLine('( i )', '#61AFEF', '#4A89C5', sprite, String(args.TEXT));
-  }
-
-  hintText(args, util) {
-    const sprite = this._getSpriteName(util);
-    this._addTaggedLine('[ i ]', '#56B6C2', '#3E8A93', sprite, String(args.TEXT));
-  }
-
-  warnText(args, util) {
-    const sprite = this._getSpriteName(util);
-    this._addTaggedLine('[ ! ]', '#E5C07B', '#B3965D', sprite, String(args.TEXT));
-  }
-
-  errorText(args, util) {
-    const sprite = this._getSpriteName(util);
-    this._addTaggedLine('[ X ]', '#E06C75', '#B0555C', sprite, String(args.TEXT));
-  }
-
-  verboseText(args, util) {
-    if (!this.verboseLogging) return;
-    const sprite = this._getSpriteName(util);
-    this._addTaggedLine('( . )', '#5C6370', '#444B56', sprite, String(args.TEXT));
-  }
-
-  doneText(args, util) {
-    const sprite = this._getSpriteName(util);
-    this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, String(args.TEXT));
-  }
-
-  queryText(args, util) {
-    const sprite = this._getSpriteName(util);
-    this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, String(args.TEXT));
-  }
-
-  loadText(args, util) {
-    const sprite = this._getSpriteName(util);
-    this._addTaggedLine('{ ~ }', '#B48EAD', '#8C6D87', sprite, String(args.TEXT));
+    switch (type) {
+      case 'hint':
+        this._addTaggedLine('[ i ]', '#56B6C2', '#3E8A93', sprite, text);
+        break;
+      case 'warn':
+        this._addTaggedLine('[ ! ]', '#E5C07B', '#B3965D', sprite, text);
+        break;
+      case 'error':
+        this._finishLoadingGroup(false);
+        this._addTaggedLine('[ X ]', '#E06C75', '#B0555C', sprite, text);
+        break;
+      case 'verbose':
+        if (!this.verboseLogging) return;
+        this._addTaggedLine('( . )', '#5C6370', '#444B56', sprite, text);
+        break;
+      case 'done':
+        this._finishLoadingGroup(true);
+        this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, text);
+        break;
+      case 'query':
+        this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, text);
+        break;
+      case 'load':
+        this._startLoadingGroup(text);
+        break;
+      default:
+        this._addTaggedLine('( i )', '#61AFEF', '#4A89C5', sprite, text);
+    }
   }
 
   setPrompt(args) {
