@@ -1053,11 +1053,16 @@ class TurboDevExtension {
         {
           opcode: 'runCommand',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'run command [COMMAND]',
+          text: 'run command [COMMAND] echo to log [ECHO]',
           arguments: {
             COMMAND: {
               type: Scratch.ArgumentType.STRING,
               defaultValue: 'help',
+            },
+            ECHO: {
+              type: Scratch.ArgumentType.STRING,
+              menu: 'YES_NO',
+              defaultValue: 'no',
             },
           },
         },
@@ -1098,7 +1103,7 @@ class TurboDevExtension {
             NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
             CMD: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
             TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
-            REQ: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
           },
         },
         {
@@ -1137,7 +1142,7 @@ class TurboDevExtension {
             SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
             PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
             TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
-            REQ: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
           },
         },
         {
@@ -1162,7 +1167,7 @@ class TurboDevExtension {
           arguments: {
             ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
             NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Dark Mode' },
-            DEF: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'false' },
+            DEF: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'no' },
           },
         },
         {
@@ -1348,6 +1353,10 @@ class TurboDevExtension {
         },
       ],
       menus: {
+        YES_NO: {
+          acceptReporters: true,
+          items: ['yes', 'no'],
+        },
         LOADING_STATUS: {
           acceptReporters: true,
           items: ['success', 'error'],
@@ -2544,7 +2553,7 @@ class TurboDevExtension {
     this._scrollToBottom();
   }
 
-  _handleCommand(text) {
+  _handleCommand(text, echo = true) {
     // Hard Limit on Input Length
     if (text.length > 512) {
       this._addLine(`@c #e74c3c:Error: Input too long (max 512 chars).@c`);
@@ -2563,7 +2572,7 @@ class TurboDevExtension {
       // If we are pending a query, capture this input
       if (this.pendingQuery) {
         // Echo what user typed
-        this._addLine(`@c #9b59b6:${text}@c`);
+        this._addLine(text, '#9b59b6');
 
         let isValid = false;
         let parsed = null;
@@ -2620,8 +2629,8 @@ class TurboDevExtension {
       }
 
       // Standard Command Logic
-      // Echo command with USER tag
-      this._addLine(`@c #9b59b6:${this.promptLabel.textContent} ${text}@c`);
+      // Echo command with USER tag (only when echo is enabled)
+      if (echo) this._addLine(`${this.promptLabel.textContent} ${text}`, '#9b59b6');
 
       // Store History
       this.commandHistory.push(text);
@@ -2919,7 +2928,7 @@ class TurboDevExtension {
     return now;
   }
 
-  _addLine(text) {
+  _addLine(text, baseColor = 'var(--ext_kxTurboDev-term-text)') {
     const line = document.createElement('div');
     line.className = 'ext_kxTurboDev-terminal-line';
 
@@ -2936,7 +2945,7 @@ class TurboDevExtension {
     textSpan.innerHTML = this._parseFormatting(text);
 
     // Default styling is now handled by CSS var, no specific type class logic
-    textSpan.style.color = 'var(--ext_kxTurboDev-term-text)';
+    textSpan.style.color = baseColor;
 
     line.appendChild(textSpan);
 
@@ -3051,7 +3060,8 @@ class TurboDevExtension {
   // --- Block Implementations ---
 
   runCommand(args) {
-    this._handleCommand(String(args.COMMAND));
+    const echo = args.ECHO === 'yes' || args.ECHO === true || args.ECHO === 'true';
+    this._handleCommand(String(args.COMMAND), echo);
   }
 
   // Implements Ask and Wait Pattern
@@ -3066,7 +3076,7 @@ class TurboDevExtension {
     const wasCommandBarDisabled = !this.commandBarEnabled;
     if (wasCommandBarDisabled) this._setCommandBarEnabled(true);
 
-    this._addLine(`@c #e67e22:${prompt}@c`);
+    this._addLine(prompt, '#e67e22');
     this.promptLabel.textContent = '?'; // Visual cue
     this.inputField.focus(); // Focus input
 
@@ -3206,7 +3216,7 @@ class TurboDevExtension {
     const argData = {
       name: String(args.NAME),
       type: String(args.TYPE),
-      optional: args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
+      optional: args.REQ !== 'yes' && args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
     };
 
     const entry = this.registeredCommands.get(cmd);
@@ -3248,7 +3258,7 @@ class TurboDevExtension {
     const argData = {
       name: String(args.NAME),
       type: String(args.TYPE),
-      optional: args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
+      optional: args.REQ !== 'yes' && args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
     };
 
     const subEntry = entry.subcommands.get(sub);
@@ -3269,7 +3279,7 @@ class TurboDevExtension {
       this.customSettings.set(id, {
         type: 'toggle',
         name: String(args.NAME),
-        value: String(args.DEF).toLowerCase() === 'true', // Bug fix
+        value: args.DEF === 'yes' || args.DEF === true || String(args.DEF).toLowerCase() === 'true', // Bug fix
       });
     }
   }
