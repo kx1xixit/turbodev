@@ -1061,6 +1061,7 @@ class TurboDevExtension {
       color2: '#2872a3',
       color3: '#10496f',
       blocks: [
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Terminal') },
         {
           opcode: 'showTerminal',
           blockType: Scratch.BlockType.COMMAND,
@@ -1077,22 +1078,29 @@ class TurboDevExtension {
           text: 'clear terminal',
         },
         {
-          opcode: 'runCommand',
+          opcode: 'isTerminalOpen',
+          blockType: Scratch.BlockType.BOOLEAN,
+          text: 'is terminal open?',
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Logging') },
+        {
+          opcode: 'logText',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'run command [COMMAND] echo to log [ECHO]',
+          text: 'log [TYPE] [TEXT]',
           arguments: {
-            COMMAND: {
-              type: Scratch.ArgumentType.STRING,
-              defaultValue: 'help',
-            },
-            ECHO: {
-              type: Scratch.ArgumentType.STRING,
-              menu: 'YES_NO',
-              defaultValue: 'no',
-            },
+            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'LOG_LEVELS', defaultValue: 'log' },
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'System Ready...' },
           },
         },
-        '---',
+        {
+          opcode: 'setPrompt',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set prompt to [TEXT]',
+          arguments: {
+            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: '>' },
+          },
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Input') },
         {
           opcode: 'queryText',
           blockType: Scratch.BlockType.COMMAND,
@@ -1111,7 +1119,31 @@ class TurboDevExtension {
           blockType: Scratch.BlockType.REPORTER,
           text: 'last answer',
         },
-        '---',
+        {
+          opcode: 'setCommandBarEnabled',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set command bar enabled [ENABLED]',
+          arguments: {
+            ENABLED: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
+          },
+        },
+        {
+          opcode: 'runCommand',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'run command [COMMAND] echo to log [ECHO]',
+          arguments: {
+            COMMAND: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: 'help',
+            },
+            ECHO: {
+              type: Scratch.ArgumentType.STRING,
+              menu: 'YES_NO',
+              defaultValue: 'no',
+            },
+          },
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Commands') },
         {
           opcode: 'registerCommand',
           blockType: Scratch.BlockType.COMMAND,
@@ -1147,142 +1179,6 @@ class TurboDevExtension {
               type: Scratch.ArgumentType.STRING,
               defaultValue: 'spawn',
             },
-          },
-        },
-        {
-          opcode: 'registerSubcommand',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register subcommand [NAME] of [PARENT] description [DESC]',
-          arguments: {
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
-            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
-            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Spawns an enemy' },
-          },
-        },
-        {
-          opcode: 'registerSubcommandArg',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'define argument [NAME] for subcommand [SUB] of [PARENT] type [TYPE] is required? [REQ]',
-          arguments: {
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
-            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
-            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
-            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
-            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
-          },
-        },
-        {
-          opcode: 'whenSubcommandReceived',
-          blockType: Scratch.BlockType.HAT,
-          text: 'when subcommand [SUB] of [PARENT] received',
-          arguments: {
-            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
-            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
-          },
-        },
-        {
-          opcode: 'getCurrentSubcommand',
-          blockType: Scratch.BlockType.REPORTER,
-          text: 'current subcommand',
-        },
-        '---',
-        {
-          opcode: 'registerSettingToggle',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register toggle setting [ID] name [NAME] default [DEF]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Dark Mode' },
-            DEF: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'no' },
-          },
-        },
-        {
-          opcode: 'registerSettingSlider',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register slider setting [ID] name [NAME] min [MIN] max [MAX] default [DEF]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'volume' },
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Volume' },
-            MIN: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0 },
-            MAX: { type: Scratch.ArgumentType.NUMBER, defaultValue: 100 },
-            DEF: { type: Scratch.ArgumentType.NUMBER, defaultValue: 50 },
-          },
-        },
-        {
-          opcode: 'registerSettingInput',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'register text setting [ID] name [NAME] default [DEF]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'playerName' },
-            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Player Name' },
-            DEF: { type: Scratch.ArgumentType.STRING, defaultValue: 'Guest' },
-          },
-        },
-        {
-          opcode: 'getSettingValue',
-          blockType: Scratch.BlockType.REPORTER,
-          text: 'get setting [ID]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
-          },
-        },
-        '---',
-        {
-          opcode: 'setSystemSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'set system setting [SETTING] to [VALUE]',
-          arguments: {
-            SETTING: { type: Scratch.ArgumentType.STRING, menu: 'SYSTEM_SETTINGS' },
-            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: '14' },
-          },
-        },
-        {
-          opcode: 'setCustomSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'set custom setting [ID] to [VALUE]',
-          arguments: {
-            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
-            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
-          },
-        },
-        {
-          opcode: 'lockSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'lock setting [ID]',
-          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
-        },
-        {
-          opcode: 'unlockSetting',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'unlock setting [ID]',
-          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
-        },
-        {
-          opcode: 'lockSettingsMenu',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'lock settings menu',
-        },
-        {
-          opcode: 'unlockSettingsMenu',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'unlock settings menu',
-        },
-        '---',
-        {
-          opcode: 'logText',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'log [TYPE] [TEXT]',
-          arguments: {
-            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'LOG_LEVELS', defaultValue: 'log' },
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: 'System Ready...' },
-          },
-        },
-        {
-          opcode: 'setPrompt',
-          blockType: Scratch.BlockType.COMMAND,
-          text: 'set prompt to [TEXT]',
-          arguments: {
-            TEXT: { type: Scratch.ArgumentType.STRING, defaultValue: '>' },
           },
         },
         {
@@ -1327,19 +1223,124 @@ class TurboDevExtension {
             NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
           },
         },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Subcommands') },
         {
-          opcode: 'isTerminalOpen',
-          blockType: Scratch.BlockType.BOOLEAN,
-          text: 'is terminal open?',
-        },
-        '---',
-        {
-          opcode: 'setCommandBarEnabled',
+          opcode: 'registerSubcommand',
           blockType: Scratch.BlockType.COMMAND,
-          text: 'set command bar enabled [ENABLED]',
+          text: 'register subcommand [NAME] of [PARENT] description [DESC]',
           arguments: {
-            ENABLED: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Spawns an enemy' },
           },
+        },
+        {
+          opcode: 'registerSubcommandArg',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define argument [NAME] for subcommand [SUB] of [PARENT] type [TYPE] is required? [REQ]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
+            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
+          },
+        },
+        {
+          opcode: 'whenSubcommandReceived',
+          blockType: Scratch.BlockType.HAT,
+          text: 'when subcommand [SUB] of [PARENT] received',
+          arguments: {
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+          },
+        },
+        {
+          opcode: 'getCurrentSubcommand',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'current subcommand',
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('User Settings') },
+        {
+          opcode: 'registerSettingToggle',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register toggle setting [ID] name [NAME] default [DEF]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Dark Mode' },
+            DEF: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'no' },
+          },
+        },
+        {
+          opcode: 'registerSettingSlider',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register slider setting [ID] name [NAME] min [MIN] max [MAX] default [DEF]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'volume' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Volume' },
+            MIN: { type: Scratch.ArgumentType.NUMBER, defaultValue: 0 },
+            MAX: { type: Scratch.ArgumentType.NUMBER, defaultValue: 100 },
+            DEF: { type: Scratch.ArgumentType.NUMBER, defaultValue: 50 },
+          },
+        },
+        {
+          opcode: 'registerSettingInput',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'register text setting [ID] name [NAME] default [DEF]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'playerName' },
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Player Name' },
+            DEF: { type: Scratch.ArgumentType.STRING, defaultValue: 'Guest' },
+          },
+        },
+        {
+          opcode: 'getSettingValue',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'get setting [ID]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
+          },
+        },
+        { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('System') },
+        {
+          opcode: 'setSystemSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set system setting [SETTING] to [VALUE]',
+          arguments: {
+            SETTING: { type: Scratch.ArgumentType.STRING, menu: 'SYSTEM_SETTINGS' },
+            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: '14' },
+          },
+        },
+        {
+          opcode: 'setCustomSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set custom setting [ID] to [VALUE]',
+          arguments: {
+            ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
+            VALUE: { type: Scratch.ArgumentType.STRING, defaultValue: 'true' },
+          },
+        },
+        {
+          opcode: 'lockSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'lock setting [ID]',
+          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
+        },
+        {
+          opcode: 'unlockSetting',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'unlock setting [ID]',
+          arguments: { ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' } },
+        },
+        {
+          opcode: 'lockSettingsMenu',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'lock settings menu',
+        },
+        {
+          opcode: 'unlockSettingsMenu',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'unlock settings menu',
         },
       ],
       menus: {
@@ -2573,8 +2574,8 @@ class TurboDevExtension {
     try {
       // If we are pending a query, capture this input
       if (this.pendingQuery) {
-        // Echo what user typed
-        this._addLine(text, '#9b59b6');
+        // Echo what user typed with a query-input tag
+        this._addTaggedLine('( > )', '#C678DD', null, null, text);
 
         let isValid = false;
         let parsed = null;
@@ -2985,10 +2986,12 @@ class TurboDevExtension {
     tagSpan.textContent = icon + ' ';
     line.appendChild(tagSpan);
 
-    const spriteSpan = document.createElement('span');
-    spriteSpan.style.color = serviceColor;
-    spriteSpan.textContent = spriteName + ': ';
-    line.appendChild(spriteSpan);
+    if (spriteName) {
+      const spriteSpan = document.createElement('span');
+      spriteSpan.style.color = serviceColor;
+      spriteSpan.textContent = spriteName + ': ';
+      line.appendChild(spriteSpan);
+    }
 
     const msgSpan = document.createElement('span');
     msgSpan.innerHTML = this._parseFormatting(message);
