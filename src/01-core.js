@@ -70,7 +70,7 @@ const STYLES = `
       }
   
       .ext_kxTurboDev-terminal-wrapper {
-          position: absolute;
+          position: fixed;
           top: 40px;
           left: 40px;
           width: 550px;
