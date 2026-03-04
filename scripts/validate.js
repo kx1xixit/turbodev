@@ -76,9 +76,9 @@ if (!fs.existsSync(manifestPath)) {
       );
     }
 
-    if (manifest.version && !/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?(?:\+[a-zA-Z0-9.-]+)?$/.test(manifest.version)) {
+    if (manifest.version && !/^\d+\.\d+\.\d+$/.test(manifest.version)) {
       fail(
-        `manifest.json "version" is invalid: "${manifest.version}". Use SemVer (e.g. 1.0.0 or 1.0.0-beta.1).`
+        `manifest.json "version" is invalid: "${manifest.version}". Use strict SemVer (e.g. 1.0.0).`
       );
     }
 

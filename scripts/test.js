@@ -31,8 +31,8 @@ function makeElement(tag = 'div') {
     dataset: {},
     classList: {
       _s: new Set(),
-      add(...c) { c.forEach(x => this._s.add(x)); },
-      remove(...c) { c.forEach(x => this._s.delete(x)); },
+      add(...c) { c.forEach(x => { this._s.add(x); }); },
+      remove(...c) { c.forEach(x => { this._s.delete(x); }); },
       toggle(c) { this._s.has(c) ? this._s.delete(c) : this._s.add(c); },
       contains(c) { return this._s.has(c); },
     },
@@ -139,7 +139,6 @@ if (!registeredExtension) {
   console.error('Runtime check failed: extension did not call Scratch.extensions.register.');
   process.exit(1);
 }
-console.log('Runtime check passed.');
 
 // Report bundle size
 const size = (fs.statSync(BUILD_FILE).size / 1024).toFixed(2);
@@ -154,9 +153,11 @@ if (registeredExtension && typeof registeredExtension.getInfo === 'function') {
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error(`Could not call getInfo() on registered extension: ${detail}`);
-    process.exitCode = 1;
+    process.exit(1);
   }
 } else {
-  console.warn('Could not retrieve block info from registered extension.');
-  process.exitCode = 1;
+  console.error('Could not retrieve block info from registered extension.');
+  process.exit(1);
 }
+
+console.log('Runtime check passed.');
