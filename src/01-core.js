@@ -951,6 +951,8 @@ class TurboDevExtension {
     this.whenSpecificCommandReceived = this.whenSpecificCommandReceived.bind(this);
     this.registerSubcommand = this.registerSubcommand.bind(this);
     this.registerSubcommandArg = this.registerSubcommandArg.bind(this);
+    this.registerCommandFlag = this.registerCommandFlag.bind(this);
+    this.registerSubcommandFlag = this.registerSubcommandFlag.bind(this);
     this.whenSubcommandReceived = this.whenSubcommandReceived.bind(this);
     this.getCurrentSubcommand = this.getCurrentSubcommand.bind(this);
     this.getFlag = this.getFlag.bind(this);
@@ -983,6 +985,7 @@ class TurboDevExtension {
       desc: desc,
       args: args,
       subcommands: new Map(),
+      flags: [],
     });
   }
 
@@ -1233,6 +1236,16 @@ class TurboDevExtension {
           },
         },
         {
+          opcode: 'registerCommandFlag',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define flag [NAME] for [CMD] description [DESC]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
+            CMD: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Enable verbose output' },
+          },
+        },
+        {
           opcode: 'whenCommandReceived',
           blockType: Scratch.BlockType.EVENT,
           text: 'when any command received',
@@ -1312,6 +1325,17 @@ class TurboDevExtension {
             PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
             TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
             REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
+          },
+        },
+        {
+          opcode: 'registerSubcommandFlag',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'define flag [NAME] for subcommand [SUB] of [PARENT] description [DESC]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'verbose' },
+            SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
+            PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
+            DESC: { type: Scratch.ArgumentType.STRING, defaultValue: 'Enable verbose output' },
           },
         },
         {
@@ -2768,6 +2792,12 @@ class TurboDevExtension {
                 this._addLine(`  @c #94a3b8:${subName}@c - ${subData.desc}`);
               });
             }
+            if (data.flags && data.flags.length > 0) {
+              this._addLine(`@c #3498db:Flags:@c`);
+              data.flags.forEach(f => {
+                this._addLine(`  @c #94a3b8:--${f.name}@c - ${f.desc}`);
+              });
+            }
           } else {
             this._addLine(`@c #e74c3c:Command '${filter}' not found.@c`);
           }
@@ -2817,6 +2847,17 @@ class TurboDevExtension {
               subDiv.appendChild(badge);
             });
             card.appendChild(subDiv);
+          }
+          if (data.flags && data.flags.length > 0) {
+            const flagsDiv = document.createElement('div');
+            flagsDiv.className = 'ext_kxTurboDev-cmd-args';
+            data.flags.forEach(f => {
+              const badge = document.createElement('span');
+              badge.className = 'ext_kxTurboDev-arg-badge';
+              badge.textContent = '--' + f.name;
+              flagsDiv.appendChild(badge);
+            });
+            card.appendChild(flagsDiv);
           }
           grid.appendChild(card);
         });
@@ -3446,15 +3487,16 @@ class TurboDevExtension {
 
     if (name) {
       if (this.registeredCommands.has(name)) {
-        // preserve args if re-registering just description
+        // preserve args and flags if re-registering just description
         const existing = this.registeredCommands.get(name);
         this.registeredCommands.set(name, {
           desc: desc,
           args: existing.args,
           subcommands: existing.subcommands || new Map(),
+          flags: existing.flags || [],
         });
       } else {
-        this.registeredCommands.set(name, { desc: desc, args: [], subcommands: new Map() });
+        this.registeredCommands.set(name, { desc: desc, args: [], subcommands: new Map(), flags: [] });
       }
     }
   }
@@ -3491,7 +3533,7 @@ class TurboDevExtension {
     const entry = this.registeredCommands.get(parent);
     if (!entry.subcommands) entry.subcommands = new Map();
     if (!entry.subcommands.has(name)) {
-      entry.subcommands.set(name, { desc: desc, args: [] });
+      entry.subcommands.set(name, { desc: desc, args: [], flags: [] });
     } else {
       // Update description only
       entry.subcommands.get(name).desc = desc;
@@ -3515,6 +3557,47 @@ class TurboDevExtension {
     const exists = subEntry.args.find(a => a.name === argData.name);
     if (!exists) {
       subEntry.args.push(argData);
+    }
+  }
+
+  registerCommandFlag(args) {
+    const cmd = String(args.CMD).trim();
+    if (!this.registeredCommands.has(cmd)) return;
+
+    const flagData = {
+      name: String(args.NAME).trim().toLowerCase(),
+      desc: String(args.DESC),
+    };
+
+    if (!flagData.name) return;
+
+    const entry = this.registeredCommands.get(cmd);
+    if (!entry.flags) entry.flags = [];
+    const exists = entry.flags.find(f => f.name === flagData.name);
+    if (!exists) {
+      entry.flags.push(flagData);
+    }
+  }
+
+  registerSubcommandFlag(args) {
+    const parent = String(args.PARENT).trim();
+    const sub = String(args.SUB).trim().toLowerCase();
+    if (!this.registeredCommands.has(parent)) return;
+    const entry = this.registeredCommands.get(parent);
+    if (!entry.subcommands || !entry.subcommands.has(sub)) return;
+
+    const flagData = {
+      name: String(args.NAME).trim().toLowerCase(),
+      desc: String(args.DESC),
+    };
+
+    if (!flagData.name) return;
+
+    const subEntry = entry.subcommands.get(sub);
+    if (!subEntry.flags) subEntry.flags = [];
+    const exists = subEntry.flags.find(f => f.name === flagData.name);
+    if (!exists) {
+      subEntry.flags.push(flagData);
     }
   }
 
