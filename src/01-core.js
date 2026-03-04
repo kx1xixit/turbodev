@@ -958,6 +958,7 @@ class TurboDevExtension {
     this.getNamedArg = this.getNamedArg.bind(this);
     this.setLoadingStep = this.setLoadingStep.bind(this);
     this.setLoadingMaxSteps = this.setLoadingMaxSteps.bind(this);
+    this.changeLoadingStep = this.changeLoadingStep.bind(this);
 
     this._loadSettings();
     this._loadProjectSettings();
@@ -1145,6 +1146,14 @@ class TurboDevExtension {
           text: 'set loading max steps to [STEPS]',
           arguments: {
             STEPS: { type: Scratch.ArgumentType.NUMBER, defaultValue: 10 },
+          },
+        },
+        {
+          opcode: 'changeLoadingStep',
+          blockType: Scratch.BlockType.COMMAND,
+          text: '[DIRECTION] step counter',
+          arguments: {
+            DIRECTION: { type: Scratch.ArgumentType.STRING, menu: 'STEP_DIRECTION', defaultValue: 'increase' },
           },
         },
         {
@@ -1399,6 +1408,10 @@ class TurboDevExtension {
         },
       ],
       menus: {
+        STEP_DIRECTION: {
+          acceptReporters: true,
+          items: ['increase', 'decrease'],
+        },
         YES_NO: {
           acceptReporters: true,
           items: ['yes', 'no'],
@@ -3628,6 +3641,17 @@ class TurboDevExtension {
     if (this.loaderStack.length === 0) return;
     const loader = this.loaderStack[this.loaderStack.length - 1];
     loader.maxSteps = Math.max(0, Number(args.STEPS) || 0);
+    this._updateLoadingProgress(loader);
+  }
+
+  changeLoadingStep(args) {
+    if (this.loaderStack.length === 0) return;
+    const loader = this.loaderStack[this.loaderStack.length - 1];
+    if (String(args.DIRECTION).toLowerCase() === 'decrease') {
+      loader.step = Math.max(0, loader.step - 1);
+    } else {
+      loader.step = loader.maxSteps > 0 ? Math.min(loader.maxSteps, loader.step + 1) : loader.step + 1;
+    }
     this._updateLoadingProgress(loader);
   }
 
