@@ -412,32 +412,10 @@ const STYLES = `
 
       /* Loading Group Progress Bar */
       .ext_kxTurboDev-loader-progress {
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          margin-left: auto;
-          flex-shrink: 0;
-      }
-      .ext_kxTurboDev-loader-progress-bar {
-          width: 80px;
-          height: 5px;
-          background: rgba(255,255,255,0.12);
-          border-radius: 3px;
-          overflow: hidden;
-          flex-shrink: 0;
-      }
-      .ext_kxTurboDev-loader-progress-fill {
-          height: 100%;
-          background: var(--ext_kxTurboDev-term-accent);
-          border-radius: 3px;
-          width: 0%;
-          transition: width 0.25s ease;
-      }
-      .ext_kxTurboDev-loader-progress-text {
-          font-size: 10px;
-          opacity: 0.55;
-          min-width: 32px;
-          text-align: right;
+          margin-left: 8px;
+          font-family: monospace;
+          font-size: 11px;
+          opacity: 0.7;
           flex-shrink: 0;
       }
 
@@ -3152,24 +3130,11 @@ class TurboDevExtension {
 
     line.appendChild(textSpan);
 
-    // Progress bar (hidden until maxSteps > 0)
-    const progressWrap = document.createElement('span');
-    progressWrap.className = 'ext_kxTurboDev-loader-progress';
-    progressWrap.style.display = 'none';
-
-    const progressBar = document.createElement('span');
-    progressBar.className = 'ext_kxTurboDev-loader-progress-bar';
-    const progressFill = document.createElement('span');
-    progressFill.className = 'ext_kxTurboDev-loader-progress-fill';
-    progressBar.appendChild(progressFill);
-
-    const progressText = document.createElement('span');
-    progressText.className = 'ext_kxTurboDev-loader-progress-text';
-    progressText.textContent = '0%';
-
-    progressWrap.appendChild(progressBar);
-    progressWrap.appendChild(progressText);
-    line.appendChild(progressWrap);
+    // Progress bar (text-based, hidden until maxSteps > 0)
+    const progressSpan = document.createElement('span');
+    progressSpan.className = 'ext_kxTurboDev-loader-progress';
+    progressSpan.style.display = 'none';
+    line.appendChild(progressSpan);
 
     this.outputContainer.appendChild(line);
 
@@ -3202,9 +3167,7 @@ class TurboDevExtension {
       groupId: groupId,
       step: 0,
       maxSteps: 0,
-      progressWrap: progressWrap,
-      progressFill: progressFill,
-      progressText: progressText,
+      progressSpan: progressSpan,
     });
 
     // Increase indentation for subsequent logs
@@ -3213,13 +3176,15 @@ class TurboDevExtension {
 
   _updateLoadingProgress(loader) {
     if (loader.maxSteps <= 0) {
-      loader.progressWrap.style.display = 'none';
+      loader.progressSpan.style.display = 'none';
       return;
     }
     const pct = Math.min(100, Math.round((loader.step / loader.maxSteps) * 100));
-    loader.progressFill.style.width = `${pct}%`;
-    loader.progressText.textContent = `${pct}%`;
-    loader.progressWrap.style.display = 'flex';
+    const total = 20;
+    const filled = Math.round((pct / 100) * total);
+    const bar = '\u2588'.repeat(filled) + '\u2592'.repeat(total - filled);
+    loader.progressSpan.textContent = `${bar} ${pct}%`;
+    loader.progressSpan.style.display = '';
   }
 
   _finishLoadingGroup(icon, tagColor, serviceColor, spriteName, message) {
