@@ -1060,8 +1060,9 @@ class TurboDevExtension {
               defaultValue: 'help',
             },
             ECHO: {
-              type: Scratch.ArgumentType.BOOLEAN,
-              defaultValue: 'false',
+              type: Scratch.ArgumentType.STRING,
+              menu: 'YES_NO',
+              defaultValue: 'no',
             },
           },
         },
@@ -1102,7 +1103,7 @@ class TurboDevExtension {
             NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'count' },
             CMD: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
             TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
-            REQ: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
           },
         },
         {
@@ -1141,7 +1142,7 @@ class TurboDevExtension {
             SUB: { type: Scratch.ArgumentType.STRING, defaultValue: 'enemy' },
             PARENT: { type: Scratch.ArgumentType.STRING, defaultValue: 'spawn' },
             TYPE: { type: Scratch.ArgumentType.STRING, menu: 'ARG_TYPES', defaultValue: 'number' },
-            REQ: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'true' },
+            REQ: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'yes' },
           },
         },
         {
@@ -1166,7 +1167,7 @@ class TurboDevExtension {
           arguments: {
             ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'darkMode' },
             NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'Dark Mode' },
-            DEF: { type: Scratch.ArgumentType.BOOLEAN, defaultValue: 'false' },
+            DEF: { type: Scratch.ArgumentType.STRING, menu: 'YES_NO', defaultValue: 'no' },
           },
         },
         {
@@ -1352,6 +1353,10 @@ class TurboDevExtension {
         },
       ],
       menus: {
+        YES_NO: {
+          acceptReporters: true,
+          items: ['yes', 'no'],
+        },
         LOADING_STATUS: {
           acceptReporters: true,
           items: ['success', 'error'],
@@ -3055,7 +3060,7 @@ class TurboDevExtension {
   // --- Block Implementations ---
 
   runCommand(args) {
-    const echo = args.ECHO === true || args.ECHO === 'true';
+    const echo = args.ECHO === 'yes' || args.ECHO === true || args.ECHO === 'true';
     this._handleCommand(String(args.COMMAND), echo);
   }
 
@@ -3211,7 +3216,7 @@ class TurboDevExtension {
     const argData = {
       name: String(args.NAME),
       type: String(args.TYPE),
-      optional: args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
+      optional: args.REQ !== 'yes' && args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
     };
 
     const entry = this.registeredCommands.get(cmd);
@@ -3253,7 +3258,7 @@ class TurboDevExtension {
     const argData = {
       name: String(args.NAME),
       type: String(args.TYPE),
-      optional: args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
+      optional: args.REQ !== 'yes' && args.REQ !== 'true' && args.REQ !== true, // Scratch bool weirdness
     };
 
     const subEntry = entry.subcommands.get(sub);
@@ -3274,7 +3279,7 @@ class TurboDevExtension {
       this.customSettings.set(id, {
         type: 'toggle',
         name: String(args.NAME),
-        value: String(args.DEF).toLowerCase() === 'true', // Bug fix
+        value: args.DEF === 'yes' || args.DEF === true || String(args.DEF).toLowerCase() === 'true', // Bug fix
       });
     }
   }
