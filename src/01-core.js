@@ -18,9 +18,11 @@ const STYLES = `
       @font-face {
           font-family: 'AgaveNerdFont';
           src: local('AgaveNerdFont-Regular'), local('Agave Nerd Font Regular'),
+               url('https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.3.0/patched-fonts/Agave/Regular/AgaveNerdFont-Regular.woff2') format('woff2'),
                url('https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.3.0/patched-fonts/Agave/Regular/AgaveNerdFont-Regular.ttf') format('truetype');
           font-weight: normal;
           font-style: normal;
+          font-display: swap;
       }
 
       :root {
@@ -363,6 +365,9 @@ const STYLES = `
           border: 1px solid var(--ext_kxTurboDev-term-border);
           color: #999;
           font-family: inherit;
+          letter-spacing: 0.5px;
+      }
+      .ext_kxTurboDev-arg-badge.required {
           border-color: rgba(230, 126, 34, 0.5);
           color: #e67e22;
           background: rgba(230, 126, 34, 0.1);
@@ -419,6 +424,12 @@ const STYLES = `
       .ext_kxTurboDev-loader-progress {
           margin-left: 8px;
           font-family: inherit;
+          font-size: 11px;
+          opacity: 0.7;
+          flex-shrink: 0;
+      }
+
+      /* Loading Group Collapse Toggle */
       .ext_kxTurboDev-group-toggle {
           cursor: pointer;
           opacity: 0.55;
@@ -583,6 +594,12 @@ const STYLES = `
           color: var(--ext_kxTurboDev-term-text);
           opacity: 0.9;
           font-family: var(--ext_kxTurboDev-term-font);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+      }
+  
+      /* --- Custom Controls --- */
       
       /* Input Field */
       .ext_kxTurboDev-setting-input, .ext_kxTurboDev-setting-select {
@@ -671,6 +688,11 @@ const STYLES = `
           border-radius: 6px;
           cursor: pointer;
           font-family: var(--ext_kxTurboDev-term-font);
+          font-size: 12px;
+          font-weight: 600;
+          transition: all 0.2s;
+      }
+      .ext_kxTurboDev-settings-btn-close:hover { background: rgba(255,255,255,0.2); }
       
       /* Action Button (e.g., Copy) */
       .ext_kxTurboDev-settings-btn-action {
@@ -817,6 +839,18 @@ const STYLES = `
   `;
 
 const FLAG_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+
+// Nerd Font icon code points used for log level tags
+const ICONS = {
+  log: '\uF05A',     // nf-fa-info_circle
+  hint: '\uF0EB',    // nf-fa-lightbulb_o
+  warn: '\uF071',    // nf-fa-exclamation_triangle
+  error: '\uF057',   // nf-fa-times_circle
+  verbose: '\uF013', // nf-fa-cog
+  done: '\uF058',    // nf-fa-check_circle
+  query: '\uF128',   // nf-fa-question
+  prompt: '\uF101',  // nf-fa-angle_double_right
+};
 
 class TurboDevExtension {
   constructor() {
@@ -2656,7 +2690,7 @@ class TurboDevExtension {
       // If we are pending a query, capture this input
       if (this.pendingQuery) {
         // Echo what user typed with a query-input tag
-        this._addTaggedLine('\uF101', '#C678DD', null, null, text);
+        this._addTaggedLine(ICONS.prompt, '#C678DD', null, null, text);
 
         let isValid = false;
         let parsed = null;
@@ -3397,7 +3431,7 @@ class TurboDevExtension {
     const wasCommandBarDisabled = !this.commandBarEnabled;
     if (wasCommandBarDisabled) this._setCommandBarEnabled(true);
 
-    this._addTaggedLine('\uF128', '#C678DD', '#9B5EB0', sprite, prompt);
+    this._addTaggedLine(ICONS.query, '#C678DD', '#9B5EB0', sprite, prompt);
     this.promptLabel.textContent = '?'; // Visual cue
     this.inputField.focus(); // Focus input
 
@@ -3741,23 +3775,23 @@ class TurboDevExtension {
     const sprite = this._getSpriteName(util);
     switch (type) {
       case 'hint':
-        this._addTaggedLine('\uF0EB', '#56B6C2', '#3E8A93', sprite, text);
+        this._addTaggedLine(ICONS.hint, '#56B6C2', '#3E8A93', sprite, text);
         break;
       case 'warn':
-        this._addTaggedLine('\uF071', '#E5C07B', '#B3965D', sprite, text);
+        this._addTaggedLine(ICONS.warn, '#E5C07B', '#B3965D', sprite, text);
         break;
       case 'error':
-        if (!this._finishLoadingGroup('\uF057', '#E06C75', '#B0555C', sprite, text)) {
-          this._addTaggedLine('\uF057', '#E06C75', '#B0555C', sprite, text);
+        if (!this._finishLoadingGroup(ICONS.error, '#E06C75', '#B0555C', sprite, text)) {
+          this._addTaggedLine(ICONS.error, '#E06C75', '#B0555C', sprite, text);
         }
         break;
       case 'verbose':
         if (!this.verboseLogging) return;
-        this._addTaggedLine('\uF013', '#5C6370', '#444B56', sprite, text);
+        this._addTaggedLine(ICONS.verbose, '#5C6370', '#444B56', sprite, text);
         break;
       case 'done':
-        if (!this._finishLoadingGroup('\uF058', '#A6E22E', '#7EAD23', sprite, text)) {
-          this._addTaggedLine('\uF058', '#A6E22E', '#7EAD23', sprite, text);
+        if (!this._finishLoadingGroup(ICONS.done, '#A6E22E', '#7EAD23', sprite, text)) {
+          this._addTaggedLine(ICONS.done, '#A6E22E', '#7EAD23', sprite, text);
         }
         break;
       case 'load':
@@ -3767,7 +3801,7 @@ class TurboDevExtension {
         this._addLine(text);
         break;
       default:
-        this._addTaggedLine('\uF05A', '#61AFEF', '#4A89C5', sprite, text);
+        this._addTaggedLine(ICONS.log, '#61AFEF', '#4A89C5', sprite, text);
     }
   }
 
