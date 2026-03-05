@@ -15,6 +15,14 @@ if (runtime.ext_kxTurboDev) {
 // --- UI STYLES ---
 // Namespace: ext_kxTurboDev-...
 const STYLES = `
+      @font-face {
+          font-family: 'AgaveNerdFont';
+          src: local('AgaveNerdFont-Regular'), local('Agave Nerd Font Regular'),
+               url('https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.3.0/patched-fonts/Agave/Regular/AgaveNerdFont-Regular.ttf') format('truetype');
+          font-weight: normal;
+          font-style: normal;
+      }
+
       :root {
           --ext_kxTurboDev-term-bg: rgba(15, 15, 15, 0.95);
           --ext_kxTurboDev-term-text: #e4e4e4;
@@ -22,7 +30,7 @@ const STYLES = `
           --ext_kxTurboDev-term-border: rgba(255, 255, 255, 0.1);
           --ext_kxTurboDev-term-header: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
           --ext_kxTurboDev-term-input-bg: rgba(0, 0, 0, 0.25);
-          --ext_kxTurboDev-term-font: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+          --ext_kxTurboDev-term-font: 'AgaveNerdFont', monospace;
       }
   
       /* Themes */
@@ -33,7 +41,7 @@ const STYLES = `
           --ext_kxTurboDev-term-border: #003b00;
           --ext_kxTurboDev-term-header: #0a0a0a;
           --ext_kxTurboDev-term-input-bg: #000000;
-          --ext_kxTurboDev-term-font: 'Courier New', monospace;
+          --ext_kxTurboDev-term-font: 'AgaveNerdFont', monospace;
       }
       .ext_kxTurboDev-theme-ocean {
           --ext_kxTurboDev-term-bg: rgba(15, 23, 42, 0.95);
@@ -354,10 +362,7 @@ const STYLES = `
           background: rgba(0,0,0,0.4);
           border: 1px solid var(--ext_kxTurboDev-term-border);
           color: #999;
-          font-family: monospace;
-          letter-spacing: 0.5px;
-      }
-      .ext_kxTurboDev-arg-badge.required {
+          font-family: inherit;
           border-color: rgba(230, 126, 34, 0.5);
           color: #e67e22;
           background: rgba(230, 126, 34, 0.1);
@@ -413,13 +418,7 @@ const STYLES = `
       /* Loading Group Progress Bar */
       .ext_kxTurboDev-loader-progress {
           margin-left: 8px;
-          font-family: monospace;
-          font-size: 11px;
-          opacity: 0.7;
-          flex-shrink: 0;
-      }
-
-      /* Loading Group Collapse Toggle */
+          font-family: inherit;
       .ext_kxTurboDev-group-toggle {
           cursor: pointer;
           opacity: 0.55;
@@ -583,13 +582,7 @@ const STYLES = `
           font-size: 12px;
           color: var(--ext_kxTurboDev-term-text);
           opacity: 0.9;
-          font-family: sans-serif;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-      }
-  
-      /* --- Custom Controls --- */
+          font-family: var(--ext_kxTurboDev-term-font);
       
       /* Input Field */
       .ext_kxTurboDev-setting-input, .ext_kxTurboDev-setting-select {
@@ -677,12 +670,7 @@ const STYLES = `
           border: none;
           border-radius: 6px;
           cursor: pointer;
-          font-family: sans-serif;
-          font-size: 12px;
-          font-weight: 600;
-          transition: all 0.2s;
-      }
-      .ext_kxTurboDev-settings-btn-close:hover { background: rgba(255,255,255,0.2); }
+          font-family: var(--ext_kxTurboDev-term-font);
       
       /* Action Button (e.g., Copy) */
       .ext_kxTurboDev-settings-btn-action {
@@ -787,7 +775,7 @@ const STYLES = `
       }
 
       .ext_kxTurboDev-stat-value {
-          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          font-family: var(--ext_kxTurboDev-term-font);
           font-size: 28px;
           font-weight: 800;
           margin-bottom: 6px;
@@ -929,7 +917,7 @@ class TurboDevExtension {
 
     this.indentLevel = 0;
     this.loaderStack = [];
-    this.ASCII_FRAMES = ['|', '/', '-', '\\'];
+    this.SPINNER_FRAMES = ['\u280B', '\u2819', '\u2839', '\u2838', '\u283C', '\u2834', '\u2826', '\u2827', '\u2807', '\u280F'];
     this._groupCounter = 0;
     this._collapsedGroups = new Set();
 
@@ -2668,7 +2656,7 @@ class TurboDevExtension {
       // If we are pending a query, capture this input
       if (this.pendingQuery) {
         // Echo what user typed with a query-input tag
-        this._addTaggedLine('( > )', '#C678DD', null, null, text);
+        this._addTaggedLine('\uF101', '#C678DD', null, null, text);
 
         let isValid = false;
         let parsed = null;
@@ -3220,13 +3208,13 @@ class TurboDevExtension {
 
     // Spinner Element (acts as the tag icon)
     const spinnerSpan = document.createElement('span');
-    spinnerSpan.style.fontFamily = 'monospace';
+    spinnerSpan.style.fontFamily = 'inherit';
     spinnerSpan.style.display = 'inline-block';
     spinnerSpan.style.width = '14px';
     spinnerSpan.style.marginRight = '8px';
     spinnerSpan.style.color = 'var(--ext_kxTurboDev-term-accent)';
     // Initial Frame (ASCII)
-    spinnerSpan.textContent = this.ASCII_FRAMES[0];
+    spinnerSpan.textContent = this.SPINNER_FRAMES[0];
 
     line.appendChild(spinnerSpan);
 
@@ -3271,8 +3259,8 @@ class TurboDevExtension {
     // Start Animation
     let frame = 0;
     const interval = setInterval(() => {
-      frame = (frame + 1) % this.ASCII_FRAMES.length;
-      spinnerSpan.textContent = this.ASCII_FRAMES[frame];
+      frame = (frame + 1) % this.SPINNER_FRAMES.length;
+      spinnerSpan.textContent = this.SPINNER_FRAMES[frame];
     }, 100);
 
     // Push to stack to track this loader
@@ -3409,7 +3397,7 @@ class TurboDevExtension {
     const wasCommandBarDisabled = !this.commandBarEnabled;
     if (wasCommandBarDisabled) this._setCommandBarEnabled(true);
 
-    this._addTaggedLine('{ ? }', '#C678DD', '#9B5EB0', sprite, prompt);
+    this._addTaggedLine('\uF128', '#C678DD', '#9B5EB0', sprite, prompt);
     this.promptLabel.textContent = '?'; // Visual cue
     this.inputField.focus(); // Focus input
 
@@ -3753,23 +3741,23 @@ class TurboDevExtension {
     const sprite = this._getSpriteName(util);
     switch (type) {
       case 'hint':
-        this._addTaggedLine('[ i ]', '#56B6C2', '#3E8A93', sprite, text);
+        this._addTaggedLine('\uF0EB', '#56B6C2', '#3E8A93', sprite, text);
         break;
       case 'warn':
-        this._addTaggedLine('[ ! ]', '#E5C07B', '#B3965D', sprite, text);
+        this._addTaggedLine('\uF071', '#E5C07B', '#B3965D', sprite, text);
         break;
       case 'error':
-        if (!this._finishLoadingGroup('[ X ]', '#E06C75', '#B0555C', sprite, text)) {
-          this._addTaggedLine('[ X ]', '#E06C75', '#B0555C', sprite, text);
+        if (!this._finishLoadingGroup('\uF057', '#E06C75', '#B0555C', sprite, text)) {
+          this._addTaggedLine('\uF057', '#E06C75', '#B0555C', sprite, text);
         }
         break;
       case 'verbose':
         if (!this.verboseLogging) return;
-        this._addTaggedLine('( . )', '#5C6370', '#444B56', sprite, text);
+        this._addTaggedLine('\uF013', '#5C6370', '#444B56', sprite, text);
         break;
       case 'done':
-        if (!this._finishLoadingGroup('[ # ]', '#A6E22E', '#7EAD23', sprite, text)) {
-          this._addTaggedLine('[ # ]', '#A6E22E', '#7EAD23', sprite, text);
+        if (!this._finishLoadingGroup('\uF058', '#A6E22E', '#7EAD23', sprite, text)) {
+          this._addTaggedLine('\uF058', '#A6E22E', '#7EAD23', sprite, text);
         }
         break;
       case 'load':
@@ -3779,7 +3767,7 @@ class TurboDevExtension {
         this._addLine(text);
         break;
       default:
-        this._addTaggedLine('( i )', '#61AFEF', '#4A89C5', sprite, text);
+        this._addTaggedLine('\uF05A', '#61AFEF', '#4A89C5', sprite, text);
     }
   }
 
