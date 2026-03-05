@@ -141,15 +141,22 @@ Object.assign(TurboDevExtension.prototype, {
     copyBtn.textContent = 'Copy History to Clipboard';
     copyBtn.onclick = () => {
       const text = this._getOutputText();
-      // Add try-catch for robustness
-      navigator.clipboard
-        .writeText(text)
-        .then(() => {
-          this._showToast('Copied to Clipboard!');
-        })
-        .catch(err => {
-          this._showToast('Writing to the clipboard is not allowed', 2000);
-        });
+      if (!navigator.clipboard || !navigator.clipboard.writeText) {
+        this._showToast('Clipboard not available', 2000);
+        return;
+      }
+      try {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            this._showToast('Copied to Clipboard!');
+          })
+          .catch(() => {
+            this._showToast('Writing to the clipboard is not allowed', 2000);
+          });
+      } catch {
+        this._showToast('Writing to the clipboard is not allowed', 2000);
+      }
     };
     content.appendChild(copyBtn);
 
@@ -489,12 +496,17 @@ Object.assign(TurboDevExtension.prototype, {
     // Lock Check
     if (this.lockedSettings.has(id)) input.disabled = true;
 
+    let lastValid = currentValue;
     input.onchange = e => {
-      let val = parseFloat(e.target.value);
-      if (val < min) val = min;
-      if (val > max) val = max;
-      e.target.value = val;
-      onChange(val);
+      const val = parseFloat(e.target.value);
+      if (!Number.isFinite(val)) {
+        e.target.value = lastValid;
+        return;
+      }
+      const clamped = Math.min(Math.max(val, min), max);
+      e.target.value = clamped;
+      lastValid = clamped;
+      onChange(clamped);
     };
 
     row.appendChild(label);
@@ -561,12 +573,17 @@ Object.assign(TurboDevExtension.prototype, {
       const dy = e.clientY - startY;
 
       // Simple bounds checking (prevent total loss)
-      const newLeft = initialLeft + dx;
+      let newLeft = initialLeft + dx;
       let newTop = initialTop + dy;
 
       // Don't allow top bar to go off bottom or too far top
       if (newTop < 0) newTop = 0;
       if (newTop > window.innerHeight - 30) newTop = window.innerHeight - 30;
+
+      // Don't allow container to go fully off-screen horizontally
+      if (newLeft < 0) newLeft = 0;
+      if (newLeft > window.innerWidth - this.container.offsetWidth)
+        newLeft = window.innerWidth - this.container.offsetWidth;
 
       this.container.style.left = `${newLeft}px`;
       this.container.style.top = `${newTop}px`;
@@ -575,5 +592,5 @@ Object.assign(TurboDevExtension.prototype, {
     window.addEventListener('mouseup', () => {
       isDragging = false;
     });
-  }
+  },
 });
