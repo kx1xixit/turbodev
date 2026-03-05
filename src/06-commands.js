@@ -68,7 +68,8 @@ Object.assign(TurboDevExtension.prototype, {
       if (val === undefined || val === '') {
         if (!def.optional) {
           this._addLine(
-            `@c #e74c3c:Error: Missing required argument '${def.name}' (${def.type})@c`
+            `Error: Missing required argument '${def.name}' (${def.type})`,
+            '#e74c3c'
           );
           return false;
         }
@@ -78,13 +79,19 @@ Object.assign(TurboDevExtension.prototype, {
       // Check Type
       if (def.type === 'number') {
         if (isNaN(parseFloat(val)) || !isFinite(val)) {
-          this._addLine(`@c #e74c3c:Error: Argument '${def.name}' expects number, got '${val}'@c`);
+          this._addLine(
+            `Error: Argument '${def.name}' expects number, got '${val}'`,
+            '#e74c3c'
+          );
           return false;
         }
       } else if (def.type === 'boolean') {
         const low = val.toLowerCase();
         if (!['true', 'false', 't', 'f', 'yes', 'no'].includes(low)) {
-          this._addLine(`@c #e74c3c:Error: Argument '${def.name}' expects boolean, got '${val}'@c`);
+          this._addLine(
+            `Error: Argument '${def.name}' expects boolean, got '${val}'`,
+            '#e74c3c'
+          );
           return false;
         }
       }
@@ -438,12 +445,14 @@ Object.assign(TurboDevExtension.prototype, {
 
         if (bestMatch && minDist <= 2) {
           this._addLine(
-            `@c #e67e22:Unknown command '${commandName}'. Did you mean '${bestMatch}'?@c`
+            `Unknown command '${commandName}'. Did you mean '${bestMatch}'?`,
+            '#e67e22'
           );
         } else {
           // Warn user but still allow hat blocks to handle it
           this._addLine(
-            `@c #e67e22:Unknown command '${commandName}'. No similar commands found.@c`
+            `Unknown command '${commandName}'. No similar commands found.`,
+            '#e67e22'
           );
         }
       }

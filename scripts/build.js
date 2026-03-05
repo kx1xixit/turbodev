@@ -100,8 +100,9 @@ async function buildExtension() {
       /**
        * TRANSFORM MODULES TO PLAIN JS
        */
-      // 1. Remove import lines
+      // 1. Remove import lines (named imports and bare side-effect imports)
       content = content.replace(/^import\s+[\s\S]*?from\s+['"].*?['"];?/gm, '');
+      content = content.replace(/^import\s+['"].*?['"];?/gm, '');
 
       // 2. Remove 'export ' prefix
       content = content.replace(/^export\s+/gm, '');
