@@ -1,7 +1,6 @@
 // --- UI STYLES ---
 // Namespace: ext_kxTurboDev-...
-// eslint-disable-next-line no-unused-vars
-const STYLES = `
+export const STYLES = `
       :root {
           --ext_kxTurboDev-term-bg: rgba(15, 15, 15, 0.95);
           --ext_kxTurboDev-term-text: #e4e4e4;
@@ -815,6 +814,5 @@ const STYLES = `
       }
   `;
 
-// eslint-disable-next-line no-unused-vars
-const FLAG_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+export const FLAG_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
 
