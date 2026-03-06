@@ -67,10 +67,7 @@ Object.assign(TurboDevExtension.prototype, {
       // Check presence
       if (val === undefined || val === '') {
         if (!def.optional) {
-          this._addLine(
-            `Error: Missing required argument '${def.name}' (${def.type})`,
-            '#e74c3c'
-          );
+          this._addLine(`Error: Missing required argument '${def.name}' (${def.type})`, '#e74c3c');
           return false;
         }
         continue; // Skip type check for optional missing args
@@ -78,20 +75,15 @@ Object.assign(TurboDevExtension.prototype, {
 
       // Check Type
       if (def.type === 'number') {
-        if (isNaN(parseFloat(val)) || !isFinite(val)) {
-          this._addLine(
-            `Error: Argument '${def.name}' expects number, got '${val}'`,
-            '#e74c3c'
-          );
+        const parsed = parseFloat(val);
+        if (isNaN(parsed) || !isFinite(parsed)) {
+          this._addLine(`Error: Argument '${def.name}' expects number, got '${val}'`, '#e74c3c');
           return false;
         }
       } else if (def.type === 'boolean') {
         const low = val.toLowerCase();
         if (!['true', 'false', 't', 'f', 'yes', 'no'].includes(low)) {
-          this._addLine(
-            `Error: Argument '${def.name}' expects boolean, got '${val}'`,
-            '#e74c3c'
-          );
+          this._addLine(`Error: Argument '${def.name}' expects boolean, got '${val}'`, '#e74c3c');
           return false;
         }
       }
@@ -286,7 +278,7 @@ Object.assign(TurboDevExtension.prototype, {
               });
             }
           } else {
-            this._addLine(`@c #e74c3c:Command '${filter}' not found.@c`);
+            this._addLine(`Command '${filter}' not found.`, '#e74c3c');
           }
           return;
         }
@@ -361,7 +353,9 @@ Object.assign(TurboDevExtension.prototype, {
       if (commandName === 'history') {
         const recent = this.commandHistory.slice(-10);
         this._addLine('@c #7f8c8d:--- Command History ---@c');
-        recent.forEach((cmd, i) => this._addLine(`@c #7f8c8d:${i + 1}. ${cmd}@c`));
+        recent.forEach((cmd, i) => {
+          this._addLine(`${i + 1}. ${cmd}`, '#7f8c8d');
+        });
         return;
       }
 
@@ -402,12 +396,12 @@ Object.assign(TurboDevExtension.prototype, {
               const v = stage.variables[id];
               // Defensive check for v and v.value
               if (v && v.type === '' && v.value !== undefined) {
-                this._addLine(`@c #7f8c8d:${v.name}: ${v.value}@c`);
+                this._addLine(`${v.name}: ${v.value}`, '#7f8c8d');
               }
             }
           }
         } catch (e) {
-          this._addLine(`@c #e74c3c:Error listing vars: ${e.message}@c`);
+          this._addLine(`Error listing vars: ${e.message}`, '#e74c3c');
         }
         return;
       }
@@ -416,12 +410,14 @@ Object.assign(TurboDevExtension.prototype, {
         this._addLine('@c #7f8c8d:--- Targets ---@c');
         const counts = {};
         vm.runtime.targets.forEach(t => {
+          if (!t.sprite) return;
           const name = t.sprite.name;
           counts[name] = (counts[name] || 0) + 1;
         });
         for (const name in counts) {
           this._addLine(
-            `@c #7f8c8d:${name}: ${counts[name]} (1 orig + ${counts[name] - 1} clones)@c`
+            `${name}: ${counts[name]} (1 orig + ${counts[name] - 1} clones)`,
+            '#7f8c8d'
           );
         }
         return;
@@ -450,10 +446,7 @@ Object.assign(TurboDevExtension.prototype, {
           );
         } else {
           // Warn user but still allow hat blocks to handle it
-          this._addLine(
-            `Unknown command '${commandName}'. No similar commands found.`,
-            '#e67e22'
-          );
+          this._addLine(`Unknown command '${commandName}'. No similar commands found.`, '#e67e22');
         }
       }
 
@@ -486,5 +479,5 @@ Object.assign(TurboDevExtension.prototype, {
       console.error('TurboDev Command Error:', err);
       this._addLine(`@c #e74c3c:System Error: ${err.message}@c`);
     }
-  }
+  },
 });
