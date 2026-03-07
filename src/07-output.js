@@ -59,7 +59,7 @@ Object.assign(TurboDevExtension.prototype, {
     line.className = 'ext_kxTurboDev-terminal-line';
 
     // Add Indentation
-    line.style.paddingLeft = `${this.indentLevel * 24}px`;
+    line.style.paddingLeft = `${this.indentLevel * INDENT_STEP_PX}px`;
 
     if (this.loaderStack.length > 0) {
       line.setAttribute('data-ancestor-ids', this.loaderStack.map(l => l.groupId).join(' '));
@@ -109,7 +109,7 @@ Object.assign(TurboDevExtension.prototype, {
     const line = document.createElement('div');
     line.className = 'ext_kxTurboDev-terminal-line';
 
-    line.style.paddingLeft = `${this.indentLevel * 24}px`;
+    line.style.paddingLeft = `${this.indentLevel * INDENT_STEP_PX}px`;
 
     if (this.loaderStack.length > 0) {
       line.setAttribute('data-ancestor-ids', this.loaderStack.map(l => l.groupId).join(' '));
@@ -176,7 +176,7 @@ Object.assign(TurboDevExtension.prototype, {
     }
 
     // Apply indentation
-    line.style.paddingLeft = `${this.indentLevel * 24}px`;
+    line.style.paddingLeft = `${this.indentLevel * INDENT_STEP_PX}px`;
 
     // Apply top offset for sticky nesting (approx 26px per level)
     line.style.top = `${this.indentLevel * 26}px`;

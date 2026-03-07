@@ -14,6 +14,10 @@ export default [
         // This line fixes the "document/performance is not defined" errors
         ...globals.browser,
         Scratch: 'readonly',
+        // Cross-file globals defined in 01-init.js, consumed by later src files
+        INDENT_STEP_PX: 'readonly',
+        INDENT_STEP_TEXT: 'readonly',
+        pxToIndent: 'readonly',
       },
     },
     rules: {

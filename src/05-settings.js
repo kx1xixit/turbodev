@@ -233,7 +233,8 @@ Object.assign(TurboDevExtension.prototype, {
           lines.push(`${name} - ${desc}`);
         });
       } else {
-        lines.push(child.textContent);
+        const paddingLeft = parseFloat(child.style.paddingLeft) || 0;
+        lines.push(pxToIndent(paddingLeft) + child.textContent);
       }
     }
     return lines.join('\n');
