@@ -116,6 +116,7 @@ export class TurboDevExtension {
     this.logText = this.logText.bind(this);
     this.getLastCommand = this.getLastCommand.bind(this);
     this.getAnswer = this.getAnswer.bind(this);
+    this.getTerminalText = this.getTerminalText.bind(this);
     this.getSettingValue = this.getSettingValue.bind(this);
     this.queryText = this.queryText.bind(this);
     this.runCommand = this.runCommand.bind(this);
@@ -296,6 +297,11 @@ export class TurboDevExtension {
           opcode: 'isTerminalOpen',
           blockType: Scratch.BlockType.BOOLEAN,
           text: 'is terminal open?',
+        },
+        {
+          opcode: 'getTerminalText',
+          blockType: Scratch.BlockType.REPORTER,
+          text: 'terminal contents',
         },
         { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('Logging') },
         {
