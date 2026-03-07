@@ -439,6 +439,13 @@ Object.assign(TurboDevExtension.prototype, {
     return this.isVisible;
   },
 
+  getTerminalText() {
+    if (!this.outputContainer) return '';
+    return Array.from(this.outputContainer.children)
+      .map(line => line.textContent)
+      .join('\n');
+  },
+
   setCommandBarEnabled(args) {
     const enabled = args.ENABLED === true || String(args.ENABLED).toLowerCase() === 'true';
     this._setCommandBarEnabled(enabled);
