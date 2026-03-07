@@ -234,9 +234,7 @@ Object.assign(TurboDevExtension.prototype, {
         });
       } else {
         const paddingLeft = parseFloat(child.style.paddingLeft) || 0;
-        const indentLevel = Math.round(paddingLeft / 24);
-        const indent = '  '.repeat(indentLevel);
-        lines.push(indent + child.textContent);
+        lines.push(pxToIndent(paddingLeft) + child.textContent);
       }
     }
     return lines.join('\n');
