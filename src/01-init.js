@@ -4,9 +4,11 @@ const runtime = vm.runtime;
 const INDENT_STEP_PX = 24;
 const INDENT_STEP_TEXT = '  ';
 
-// eslint-disable-next-line no-unused-vars -- used across concatenated src files
-function pxToIndent(pixels) {
-  return INDENT_STEP_TEXT.repeat(Math.round(pixels / INDENT_STEP_PX));
+// eslint-disable-next-line no-unused-vars
+function pxToIndent(paddingLeft) {
+  const px = Number.isFinite(paddingLeft) ? paddingLeft : 0;
+  const steps = Math.max(0, Math.round(px / INDENT_STEP_PX));
+  return INDENT_STEP_TEXT.repeat(steps);
 }
 
 // --- Singleton & Cleanup ---
