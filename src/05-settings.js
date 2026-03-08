@@ -244,6 +244,7 @@ Object.assign(TurboDevExtension.prototype, {
     this.container.style.removeProperty('--ext_kxTurboDev-term-header');
     this.container.style.removeProperty('--ext_kxTurboDev-term-input-bg');
     this.container.style.removeProperty('--ext_kxTurboDev-term-font');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-switch-track');
   },
 
   _applyCustomTheme() {
@@ -257,6 +258,7 @@ Object.assign(TurboDevExtension.prototype, {
     this.container.style.setProperty('--ext_kxTurboDev-term-header', ct.header);
     this.container.style.setProperty('--ext_kxTurboDev-term-input-bg', ct.inputBg);
     this.container.style.setProperty('--ext_kxTurboDev-term-font', ct.font);
+    this.container.style.setProperty('--ext_kxTurboDev-term-switch-track', ct.border);
   },
 
   _buildThemeBuilderSection(content) {

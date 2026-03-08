@@ -9,6 +9,8 @@ export const STYLES = `
           --ext_kxTurboDev-term-header: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
           --ext_kxTurboDev-term-input-bg: rgba(0, 0, 0, 0.25);
           --ext_kxTurboDev-term-font: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+          --ext_kxTurboDev-term-switch-track: rgba(255, 255, 255, 0.2);
+          --ext_kxTurboDev-term-switch-knob: #ffffff;
       }
   
       /* Themes */
@@ -68,6 +70,8 @@ export const STYLES = `
           --ext_kxTurboDev-term-border: rgba(0, 0, 0, 0.12);
           --ext_kxTurboDev-term-header: rgba(0, 0, 0, 0.04);
           --ext_kxTurboDev-term-input-bg: rgba(0, 0, 0, 0.05);
+          --ext_kxTurboDev-term-switch-track: rgba(0, 0, 0, 0.2);
+          --ext_kxTurboDev-term-switch-knob: #ffffff;
       }
   
       /* Animation Keyframes */
@@ -682,7 +686,7 @@ export const STYLES = `
           position: absolute;
           cursor: pointer;
           top: 0; left: 0; right: 0; bottom: 0;
-          background-color: rgba(255,255,255,0.15);
+          background-color: var(--ext_kxTurboDev-term-switch-track);
           transition: .3s;
           border-radius: 20px;
       }
@@ -693,7 +697,7 @@ export const STYLES = `
           width: 14px;
           left: 3px;
           bottom: 3px;
-          background-color: white;
+          background-color: var(--ext_kxTurboDev-term-switch-knob);
           transition: .3s;
           border-radius: 50%;
       }
