@@ -597,13 +597,14 @@ Object.assign(TurboDevExtension.prototype, {
     if (setting === 'fontSize') val = parseInt(val) || 13;
     if (setting === 'opacity') val = parseFloat(val) || 1.0;
     if (setting === 'cliMode' || setting === 'trueTuiMode' || setting === 'showTimestamps') {
-      val = String(val).toLowerCase() === 'true';
+      const lower = String(val).toLowerCase();
+      val = val === true || lower === 'true' || lower === 'yes';
     }
 
     this.systemSettings[setting] = val;
-    this._saveSettings();
 
-    // Apply side effects
+    // Apply side effects — these may toggle other flags (e.g. mutual exclusion between
+    // cliMode and trueTuiMode), so we save AFTER the side effects run.
     if (setting === 'fontSize') {
       this.outputContainer.style.fontSize = `${val}px`;
       this.inputField.style.fontSize = `${val}px`;
@@ -616,6 +617,8 @@ Object.assign(TurboDevExtension.prototype, {
     } else if (setting === 'theme') {
       this._setTheme(val);
     }
+
+    this._saveSettings();
 
     if (this.settingsPanel.classList.contains('open')) this._refreshSettingsUI();
   },

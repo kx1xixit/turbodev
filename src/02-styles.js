@@ -185,6 +185,11 @@ export const STYLES = `
           display: none !important;
       }
 
+      /* Hide scroll-to-bottom button in True TUI mode so the canvas stays text-only */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-scroll-btn {
+          display: none !important;
+      }
+
       /* Style input area as a seamless inline terminal line in True TUI mode */
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-terminal-input-area {
           background: transparent !important;

@@ -683,7 +683,7 @@ export class TurboDevExtension {
         },
         SYSTEM_SETTINGS: {
           acceptReporters: true,
-          items: ['fontSize', 'opacity', 'cliMode', 'showTimestamps', 'theme'],
+          items: ['fontSize', 'opacity', 'cliMode', 'trueTuiMode', 'showTimestamps', 'theme'],
         },
         ARG_TYPES: {
           acceptReporters: true,
