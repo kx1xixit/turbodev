@@ -125,6 +125,25 @@ export const STYLES = `
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode .ext_kxTurboDev-control-btn.clear {
           display: none;
       }
+
+      /* True TUI Mode: Full viewport, hides all other GUI (Positioning handled by JS) */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode {
+          border-radius: 0 !important;
+          border: none !important;
+          background: #050505 !important; /* Solid Black */
+          opacity: 1 !important;
+          backdrop-filter: none !important;
+          resize: none !important;
+          box-shadow: none !important;
+          z-index: 500 !important; /* Ensure it stays below TurboWarp modals */
+      }
+
+      /* Hide Close/Minimize/Clear Button in True TUI Mode */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-control-btn.close,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-control-btn.minimize,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-control-btn.clear {
+          display: none;
+      }
   
       /* Resize handle corner hint */
       .ext_kxTurboDev-terminal-wrapper::after {
@@ -140,6 +159,7 @@ export const STYLES = `
           opacity: 0.3;
       }
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode::after,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode::after,
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized::after { display: none; }
   
       .ext_kxTurboDev-terminal-header {

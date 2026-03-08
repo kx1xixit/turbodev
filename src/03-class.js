@@ -48,6 +48,7 @@ export class TurboDevExtension {
       fontSize: 13,
       opacity: 1.0,
       cliMode: false,
+      trueTuiMode: false,
       showTimestamps: false,
       theme: 'standard',
     };
@@ -111,6 +112,8 @@ export class TurboDevExtension {
     this.boundKeyDown = this._handleKeyDown.bind(this);
     this.boundStopAll = this._onStopAll.bind(this);
     this.boundCliScroll = this._onCliScroll.bind(this);
+    this.boundTuiScroll = this._onTuiScroll.bind(this);
+    this.boundUpdateTuiPosition = this._updateTuiPosition.bind(this);
 
     // CRITICAL FIX: Bind block methods to 'this'
     this.logText = this.logText.bind(this);
@@ -192,10 +195,12 @@ export class TurboDevExtension {
     document.removeEventListener('keydown', this.boundKeyDown);
     vm.runtime.off('PROJECT_STOP_ALL', this.boundStopAll);
     window.removeEventListener('scroll', this.boundCliScroll, { capture: true, passive: true });
+    window.removeEventListener('scroll', this.boundTuiScroll, { capture: true, passive: true });
 
     this._cancelPendingQuery();
 
     if (this.cliReqId) cancelAnimationFrame(this.cliReqId);
+    if (this.tuiReqId) cancelAnimationFrame(this.tuiReqId);
     if (this.scrollReqId) cancelAnimationFrame(this.scrollReqId);
     this._stopPerfLoop();
 

@@ -86,6 +86,12 @@ Object.assign(TurboDevExtension.prototype, {
       this._saveSettings();
     });
 
+    // True TUI Mode Toggle
+    this._addToggle(content, 'True TUI', 'trueTuiMode', this.systemSettings.trueTuiMode, val => {
+      this._setTrueTuiMode(val);
+      this._saveSettings();
+    });
+
     // Timestamp Toggle
     this._addToggle(
       content,
@@ -123,7 +129,7 @@ Object.assign(TurboDevExtension.prototype, {
     // Opacity Slider
     this._addSlider(content, 'Opacity', 'opacity', this.systemSettings.opacity, 0.2, 1.0, val => {
       this.systemSettings.opacity = val;
-      if (!this.systemSettings.cliMode) {
+      if (!this.systemSettings.cliMode && !this.systemSettings.trueTuiMode) {
         this.container.style.opacity = val;
       }
       this._saveSettings();
@@ -288,6 +294,9 @@ Object.assign(TurboDevExtension.prototype, {
   _setCliMode(enabled) {
     this.systemSettings.cliMode = enabled;
     if (enabled) {
+      // Disable True TUI mode if active — they are mutually exclusive
+      if (this.systemSettings.trueTuiMode) this._setTrueTuiMode(false);
+
       // Save current state
       this.prevRect = {
         left: this.container.style.left,
@@ -336,6 +345,80 @@ Object.assign(TurboDevExtension.prototype, {
     }
   },
 
+  _syncContainerToViewport() {
+    if (!this.container) return;
+    this.container.style.position = 'fixed';
+    this.container.style.left = '0px';
+    this.container.style.top = '0px';
+    this.container.style.width = window.innerWidth + 'px';
+    this.container.style.height = window.innerHeight + 'px';
+  },
+
+  _updateTuiPosition() {
+    if (!this.systemSettings.trueTuiMode) return;
+    this._syncContainerToViewport();
+    this.tuiReqId = requestAnimationFrame(this.boundUpdateTuiPosition);
+  },
+
+  _onTuiScroll() {
+    if (!this.systemSettings.trueTuiMode) return;
+    this._syncContainerToViewport();
+  },
+
+  _setTrueTuiMode(enabled) {
+    this.systemSettings.trueTuiMode = enabled;
+    if (enabled) {
+      // Disable CLI mode if active — they are mutually exclusive
+      if (this.systemSettings.cliMode) this._setCliMode(false);
+
+      // Save current state
+      this.prevRect = {
+        left: this.container.style.left,
+        top: this.container.style.top,
+        width: this.container.style.width,
+        height: this.container.style.height,
+      };
+
+      this.container.classList.add('ext_kxTurboDev-true-tui-mode');
+
+      // If currently minimized, maximize it because minimized True TUI mode looks broken/hidden
+      if (this.isMinimized) this._toggleMinimize();
+
+      // Start tracking loop - CANCEL FIRST to prevent duplication
+      if (this.tuiReqId) cancelAnimationFrame(this.tuiReqId);
+      // Immediately sync to viewport to avoid one-frame misalignment before the rAF loop runs
+      this._syncContainerToViewport();
+      this.tuiReqId = requestAnimationFrame(this.boundUpdateTuiPosition);
+      window.addEventListener('scroll', this.boundTuiScroll, { capture: true, passive: true });
+    } else {
+      this.container.classList.remove('ext_kxTurboDev-true-tui-mode');
+
+      // Stop tracking loop
+      if (this.tuiReqId) {
+        cancelAnimationFrame(this.tuiReqId);
+        this.tuiReqId = null;
+      }
+      window.removeEventListener('scroll', this.boundTuiScroll, { capture: true, passive: true });
+
+      // Restore normal fixed positioning and saved manual geometry
+      this.container.style.position = 'fixed';
+      if (this.prevRect) {
+        this.container.style.left = this.prevRect.left;
+        this.container.style.top = this.prevRect.top;
+        this.container.style.width = this.prevRect.width;
+        this.container.style.height = this.prevRect.height;
+      } else {
+        // Default fallback
+        this.container.style.left = '40px';
+        this.container.style.top = '40px';
+        this.container.style.width = '550px';
+        this.container.style.height = '380px';
+      }
+      // Restore opacity slider value
+      this.container.style.opacity = this.systemSettings.opacity;
+    }
+  },
+
   _setCommandBarEnabled(enabled) {
     this.commandBarEnabled = enabled;
     if (this.inputField) {
@@ -357,7 +440,7 @@ Object.assign(TurboDevExtension.prototype, {
     // Type conversion
     if (setting === 'fontSize') val = parseInt(val) || 13;
     if (setting === 'opacity') val = parseFloat(val) || 1.0;
-    if (setting === 'cliMode' || setting === 'showTimestamps') {
+    if (setting === 'cliMode' || setting === 'trueTuiMode' || setting === 'showTimestamps') {
       val = String(val).toLowerCase() === 'true';
     }
 
@@ -368,10 +451,12 @@ Object.assign(TurboDevExtension.prototype, {
     if (setting === 'fontSize') {
       this.outputContainer.style.fontSize = `${val}px`;
       this.inputField.style.fontSize = `${val}px`;
-    } else if (setting === 'opacity' && !this.systemSettings.cliMode) {
+    } else if (setting === 'opacity' && !this.systemSettings.cliMode && !this.systemSettings.trueTuiMode) {
       this.container.style.opacity = val;
     } else if (setting === 'cliMode') {
       this._setCliMode(val);
+    } else if (setting === 'trueTuiMode') {
+      this._setTrueTuiMode(val);
     } else if (setting === 'theme') {
       this._setTheme(val);
     }
@@ -415,8 +500,11 @@ Object.assign(TurboDevExtension.prototype, {
 
   unlockSettingsMenu() {
     this.isSettingsMenuLocked = false;
-    // Only show if not in CLI mode (which hides it by default css)
-    if (!this.container.classList.contains('ext_kxTurboDev-cli-mode')) {
+    // Only show if not in CLI mode or True TUI mode (which hides it by default css)
+    if (
+      !this.container.classList.contains('ext_kxTurboDev-cli-mode') &&
+      !this.container.classList.contains('ext_kxTurboDev-true-tui-mode')
+    ) {
       this.settingsBtn.style.display = 'flex';
     }
   },
@@ -555,9 +643,9 @@ Object.assign(TurboDevExtension.prototype, {
     let startX, startY, initialLeft, initialTop;
 
     dragHandle.addEventListener('mousedown', e => {
-      // Don't drag if clicking a button or if in CLI mode
+      // Don't drag if clicking a button or if in CLI mode or True TUI mode
       if (e.target.closest('.ext_kxTurboDev-control-btn')) return;
-      if (this.systemSettings.cliMode) return;
+      if (this.systemSettings.cliMode || this.systemSettings.trueTuiMode) return;
 
       isDragging = true;
       startX = e.clientX;
