@@ -143,7 +143,7 @@ export const STYLES = `
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode {
           border-radius: 0 !important;
           border: none !important;
-          background: #050505 !important; /* Solid Black */
+          background-color: var(--ext_kxTurboDev-term-bg) !important;
           opacity: 1 !important;
           backdrop-filter: none !important;
           resize: none !important;

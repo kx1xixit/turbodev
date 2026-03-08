@@ -26,7 +26,7 @@ Object.assign(TurboDevExtension.prototype, {
     const statusDot = document.createElement('div');
     statusDot.className = 'ext_kxTurboDev-terminal-status';
     this.titleEl = document.createElement('span');
-    this.titleEl.textContent = this.systemSettings.displayName || 'TurboDev';
+    this.titleEl.textContent = this.systemSettings.displayName ?? 'TurboDev';
     titleGroup.appendChild(statusDot);
     titleGroup.appendChild(this.titleEl);
 
@@ -254,7 +254,7 @@ Object.assign(TurboDevExtension.prototype, {
   _applySystemSettings() {
     this._setTheme(this.systemSettings.theme);
     if (this.titleEl) {
-      this.titleEl.textContent = this.systemSettings.displayName || 'TurboDev';
+      this.titleEl.textContent = this.systemSettings.displayName ?? 'TurboDev';
     }
     if (this.systemSettings.cliMode) {
       this._setCliMode(true);

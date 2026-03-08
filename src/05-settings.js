@@ -62,7 +62,7 @@ Object.assign(TurboDevExtension.prototype, {
     const themeSelect = document.createElement('select');
     themeSelect.className = 'ext_kxTurboDev-setting-select';
 
-    ['standard', 'matrix', 'ocean', 'retro', 'nord', 'solarized', 'monokai', 'light', 'custom'].forEach(t => {
+    THEMES.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t;
       opt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
@@ -328,13 +328,18 @@ Object.assign(TurboDevExtension.prototype, {
     if (/^#[0-9a-fA-F]{3}$/.test(s)) {
       return '#' + [...s.slice(1)].map(c => c + c).join('');
     }
-    // rgba/rgb — extract r, g, b and convert to hex
+    // rgba/rgb — extract r, g, b, clamp to [0,255], and convert to hex
     const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
     if (m) {
       return (
         '#' +
         [m[1], m[2], m[3]]
-          .map(n => parseInt(n).toString(16).padStart(2, '0'))
+          .map(component => {
+            let v = parseInt(component, 10);
+            if (Number.isNaN(v)) v = 0;
+            v = Math.max(0, Math.min(255, v));
+            return v.toString(16).padStart(2, '0');
+          })
           .join('')
       );
     }

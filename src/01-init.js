@@ -4,6 +4,10 @@ const runtime = vm.runtime;
 const INDENT_STEP_PX = 24;
 const INDENT_STEP_TEXT = '  ';
 
+// Supported theme identifiers — single source of truth used by the settings UI and CLI
+// eslint-disable-next-line no-unused-vars
+const THEMES = ['standard', 'matrix', 'ocean', 'retro', 'nord', 'solarized', 'monokai', 'light', 'custom'];
+
 // eslint-disable-next-line no-unused-vars
 function pxToIndent(paddingLeft) {
   const px = Number.isFinite(paddingLeft) ? paddingLeft : 0;
