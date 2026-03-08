@@ -367,12 +367,13 @@ Object.assign(TurboDevExtension.prototype, {
 
       if (commandName === 'theme') {
         const newTheme = positional[0] ? positional[0].toLowerCase() : '';
-        if (['standard', 'matrix', 'ocean', 'retro'].includes(newTheme)) {
+        const validThemes = ['standard', 'matrix', 'ocean', 'retro', 'nord', 'solarized', 'monokai', 'light', 'custom'];
+        if (validThemes.includes(newTheme)) {
           this._setTheme(newTheme);
           this._saveSettings(); // Persist theme change
           this._addLine(`@c #2ecc71:Theme set to ${newTheme}@c`);
         } else {
-          this._addLine('@c #e74c3c:Unknown theme. Available: standard, matrix, ocean, retro@c');
+          this._addLine(`@c #e74c3c:Unknown theme. Available: ${validThemes.join(', ')}@c`);
         }
         return;
       }

@@ -7,6 +7,7 @@ export class TurboDevExtension {
     this.perfContainer = null;
     this.inputField = null;
     this.hintLabel = null; // New UI Element
+    this.titleEl = null;
     this.settingsPanel = null;
     this.scrollBtn = null;
     this.settingsBtn = null;
@@ -50,6 +51,16 @@ export class TurboDevExtension {
       cliMode: false,
       showTimestamps: false,
       theme: 'standard',
+      displayName: 'TurboDev',
+      customTheme: {
+        bg: '#0f0f0f',
+        text: '#e4e4e4',
+        accent: '#3498db',
+        border: '#1a1a1a',
+        header: '#1a1a1a',
+        inputBg: '#0a0a0a',
+        font: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
+      },
     };
 
     this.prevRect = null;
@@ -134,6 +145,7 @@ export class TurboDevExtension {
     this.setLoadingStep = this.setLoadingStep.bind(this);
     this.setLoadingMaxSteps = this.setLoadingMaxSteps.bind(this);
     this.changeLoadingStep = this.changeLoadingStep.bind(this);
+    this.setTerminalName = this.setTerminalName.bind(this);
 
     this._loadSettings();
     this._loadProjectSettings();
@@ -227,7 +239,9 @@ export class TurboDevExtension {
       const stored = localStorage.getItem('ext_kxTurboDev_settings');
       if (stored) {
         const parsed = JSON.parse(stored);
-        this.systemSettings = { ...this.systemSettings, ...parsed };
+        // Shallow-merge customTheme so all fields have values from either stored data or constructor defaults
+        const customTheme = { ...this.systemSettings.customTheme, ...(parsed.customTheme || {}) };
+        this.systemSettings = { ...this.systemSettings, ...parsed, customTheme };
       }
     } catch (e) {
       console.warn('TurboDev: Failed to load settings', e);
@@ -572,6 +586,14 @@ export class TurboDevExtension {
           },
         },
         { blockType: Scratch.BlockType.LABEL, text: Scratch.translate('System') },
+        {
+          opcode: 'setTerminalName',
+          blockType: Scratch.BlockType.COMMAND,
+          text: 'set terminal name to [NAME]',
+          arguments: {
+            NAME: { type: Scratch.ArgumentType.STRING, defaultValue: 'TurboDev' },
+          },
+        },
         {
           opcode: 'setSystemSetting',
           blockType: Scratch.BlockType.COMMAND,
