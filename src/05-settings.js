@@ -345,24 +345,15 @@ Object.assign(TurboDevExtension.prototype, {
     }
   },
 
-  _syncContainerToViewport() {
-    if (!this.container) return;
-    this.container.style.position = 'fixed';
-    this.container.style.left = '0px';
-    this.container.style.top = '0px';
-    this.container.style.width = window.innerWidth + 'px';
-    this.container.style.height = window.innerHeight + 'px';
-  },
-
   _updateTuiPosition() {
     if (!this.systemSettings.trueTuiMode) return;
-    this._syncContainerToViewport();
+    this._syncContainerToCanvas();
     this.tuiReqId = requestAnimationFrame(this.boundUpdateTuiPosition);
   },
 
   _onTuiScroll() {
     if (!this.systemSettings.trueTuiMode) return;
-    this._syncContainerToViewport();
+    this._syncContainerToCanvas();
   },
 
   _setTrueTuiMode(enabled) {
@@ -386,8 +377,8 @@ Object.assign(TurboDevExtension.prototype, {
 
       // Start tracking loop - CANCEL FIRST to prevent duplication
       if (this.tuiReqId) cancelAnimationFrame(this.tuiReqId);
-      // Immediately sync to viewport to avoid one-frame misalignment before the rAF loop runs
-      this._syncContainerToViewport();
+      // Immediately sync to canvas to avoid one-frame misalignment before the rAF loop runs
+      this._syncContainerToCanvas();
       this.tuiReqId = requestAnimationFrame(this.boundUpdateTuiPosition);
       window.addEventListener('scroll', this.boundTuiScroll, { capture: true, passive: true });
     } else {
