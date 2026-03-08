@@ -9,6 +9,8 @@ export const STYLES = `
           --ext_kxTurboDev-term-header: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
           --ext_kxTurboDev-term-input-bg: rgba(0, 0, 0, 0.25);
           --ext_kxTurboDev-term-font: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+          --ext_kxTurboDev-term-switch-track: rgba(255, 255, 255, 0.2);
+          --ext_kxTurboDev-term-switch-knob: #ffffff;
       }
   
       /* Themes */
@@ -36,6 +38,40 @@ export const STYLES = `
           --ext_kxTurboDev-term-border: #594d00;
           --ext_kxTurboDev-term-header: #242424;
           --ext_kxTurboDev-term-input-bg: #111;
+      }
+      .ext_kxTurboDev-theme-nord {
+          --ext_kxTurboDev-term-bg: #2e3440;
+          --ext_kxTurboDev-term-text: #d8dee9;
+          --ext_kxTurboDev-term-accent: #88c0d0;
+          --ext_kxTurboDev-term-border: #4c566a;
+          --ext_kxTurboDev-term-header: #3b4252;
+          --ext_kxTurboDev-term-input-bg: #242933;
+      }
+      .ext_kxTurboDev-theme-solarized {
+          --ext_kxTurboDev-term-bg: #002b36;
+          --ext_kxTurboDev-term-text: #839496;
+          --ext_kxTurboDev-term-accent: #268bd2;
+          --ext_kxTurboDev-term-border: #073642;
+          --ext_kxTurboDev-term-header: #073642;
+          --ext_kxTurboDev-term-input-bg: #00212b;
+      }
+      .ext_kxTurboDev-theme-monokai {
+          --ext_kxTurboDev-term-bg: #272822;
+          --ext_kxTurboDev-term-text: #f8f8f2;
+          --ext_kxTurboDev-term-accent: #a6e22e;
+          --ext_kxTurboDev-term-border: #3e3d32;
+          --ext_kxTurboDev-term-header: #1e1f1c;
+          --ext_kxTurboDev-term-input-bg: #1e1f1c;
+      }
+      .ext_kxTurboDev-theme-light {
+          --ext_kxTurboDev-term-bg: rgba(250, 250, 250, 0.97);
+          --ext_kxTurboDev-term-text: #333333;
+          --ext_kxTurboDev-term-accent: #0070cc;
+          --ext_kxTurboDev-term-border: rgba(0, 0, 0, 0.12);
+          --ext_kxTurboDev-term-header: rgba(0, 0, 0, 0.04);
+          --ext_kxTurboDev-term-input-bg: rgba(0, 0, 0, 0.05);
+          --ext_kxTurboDev-term-switch-track: rgba(0, 0, 0, 0.2);
+          --ext_kxTurboDev-term-switch-knob: #ffffff;
       }
   
       /* Animation Keyframes */
@@ -111,7 +147,8 @@ export const STYLES = `
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode {
           border-radius: 0 !important;
           border: none !important;
-          background: #050505 !important; /* Solid Black */
+          background: var(--ext_kxTurboDev-term-bg) !important;
+          background-image: none !important;
           opacity: 1 !important;
           backdrop-filter: none !important;
           resize: none !important;
@@ -624,6 +661,25 @@ export const STYLES = `
           background: rgba(0,0,0,0.5);
           outline: none;
       }
+      input[type=color].ext_kxTurboDev-setting-color {
+          -webkit-appearance: none;
+          width: 36px;
+          height: 28px;
+          padding: 2px;
+          border: 1px solid var(--ext_kxTurboDev-term-border);
+          border-radius: 6px;
+          background: rgba(0,0,0,0.3);
+          cursor: pointer;
+          flex-shrink: 0;
+      }
+      input[type=color].ext_kxTurboDev-setting-color::-webkit-color-swatch-wrapper {
+          padding: 0;
+          border-radius: 4px;
+      }
+      input[type=color].ext_kxTurboDev-setting-color::-webkit-color-swatch {
+          border: none;
+          border-radius: 4px;
+      }
   
       /* Slider Styling */
       input[type=range].ext_kxTurboDev-setting-slider {
@@ -661,7 +717,7 @@ export const STYLES = `
           position: absolute;
           cursor: pointer;
           top: 0; left: 0; right: 0; bottom: 0;
-          background-color: rgba(255,255,255,0.15);
+          background-color: var(--ext_kxTurboDev-term-switch-track);
           transition: .3s;
           border-radius: 20px;
       }
@@ -672,7 +728,7 @@ export const STYLES = `
           width: 14px;
           left: 3px;
           bottom: 3px;
-          background-color: white;
+          background-color: var(--ext_kxTurboDev-term-switch-knob);
           transition: .3s;
           border-radius: 50%;
       }

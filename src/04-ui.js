@@ -25,9 +25,10 @@ Object.assign(TurboDevExtension.prototype, {
     titleGroup.className = 'ext_kxTurboDev-terminal-title';
     const statusDot = document.createElement('div');
     statusDot.className = 'ext_kxTurboDev-terminal-status';
-    const titleText = document.createTextNode('TurboDev');
+    this.titleEl = document.createElement('span');
+    this.titleEl.textContent = this.systemSettings.displayName ?? 'TurboDev';
     titleGroup.appendChild(statusDot);
-    titleGroup.appendChild(titleText);
+    titleGroup.appendChild(this.titleEl);
 
     const controls = document.createElement('div');
     controls.className = 'ext_kxTurboDev-terminal-controls';
@@ -252,6 +253,9 @@ Object.assign(TurboDevExtension.prototype, {
   },
   _applySystemSettings() {
     this._setTheme(this.systemSettings.theme);
+    if (this.titleEl) {
+      this.titleEl.textContent = this.systemSettings.displayName ?? 'TurboDev';
+    }
     // CLI mode and True TUI mode are mutually exclusive; CLI takes precedence if both are somehow saved
     if (this.systemSettings.cliMode) {
       this._setCliMode(true);
