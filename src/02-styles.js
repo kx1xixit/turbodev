@@ -126,7 +126,7 @@ export const STYLES = `
           display: none;
       }
 
-      /* True TUI Mode: Full viewport, hides all other GUI (Positioning handled by JS) */
+      /* True TUI Mode: Covers Scratch canvas, hides TurboDev chrome (Positioning handled by JS) */
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode {
           border-radius: 0 !important;
           border: none !important;
@@ -138,11 +138,21 @@ export const STYLES = `
           z-index: 500 !important; /* Ensure it stays below TurboWarp modals */
       }
 
-      /* Hide Close/Minimize/Clear Button in True TUI Mode */
-      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-control-btn.close,
-      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-control-btn.minimize,
-      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-control-btn.clear {
-          display: none;
+      /* Hide title bar entirely in True TUI mode */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-terminal-header {
+          display: none !important;
+      }
+
+      /* Hide settings panel in True TUI mode (use the settings command instead) */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-settings-panel {
+          display: none !important;
+      }
+
+      /* Style input area as an inline terminal line in True TUI mode */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-terminal-input-area {
+          background: transparent !important;
+          border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+          padding: 6px 16px !important;
       }
   
       /* Resize handle corner hint */

@@ -83,6 +83,21 @@ export class TurboDevExtension {
     ]);
     this._registerBuiltIn('listvars', 'Lists global variables');
     this._registerBuiltIn('listsprites', 'Lists sprites and clones');
+    this._registerBuiltIn('settings', 'View or change system settings');
+    const settingsEntry = this.registeredCommands.get('settings');
+    settingsEntry.subcommands.set('get', {
+      desc: 'Get a setting value',
+      args: [{ name: 'key', type: 'string', optional: false }],
+      flags: [],
+    });
+    settingsEntry.subcommands.set('set', {
+      desc: 'Set a setting value',
+      args: [
+        { name: 'key', type: 'string', optional: false },
+        { name: 'value', type: 'string', optional: false },
+      ],
+      flags: [],
+    });
 
     // Query state
     this.pendingQuery = null;

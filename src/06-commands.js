@@ -423,6 +423,42 @@ Object.assign(TurboDevExtension.prototype, {
         return;
       }
 
+      if (commandName === 'settings') {
+        const VALID_KEYS = Object.keys(this.systemSettings);
+        if (subcommandName === 'get') {
+          const key = positional[0];
+          if (!key) {
+            this._addLine('@c #e74c3c:Usage: settings get <key>@c');
+            return;
+          }
+          if (!VALID_KEYS.includes(key)) {
+            this._addLine(`Unknown setting '${key}'. Valid keys: ${VALID_KEYS.join(', ')}`, '#e74c3c');
+            return;
+          }
+          this._addLine(`${key}: ${this.systemSettings[key]}`, '#7f8c8d');
+        } else if (subcommandName === 'set') {
+          const key = positional[0];
+          const value = positional[1];
+          if (!key || value === undefined) {
+            this._addLine('@c #e74c3c:Usage: settings set <key> <value>@c');
+            return;
+          }
+          if (!VALID_KEYS.includes(key)) {
+            this._addLine(`Unknown setting '${key}'. Valid keys: ${VALID_KEYS.join(', ')}`, '#e74c3c');
+            return;
+          }
+          this.setSystemSetting({ SETTING: key, VALUE: value });
+          this._addLine(`@c #2ecc71:${key} \u2192 ${this.systemSettings[key]}@c`);
+        } else {
+          // List all settings
+          this._addLine('@c #7f8c8d:--- System Settings ---@c');
+          VALID_KEYS.forEach(key => {
+            this._addLine(`${key}: ${this.systemSettings[key]}`, '#7f8c8d');
+          });
+        }
+        return;
+      }
+
       // --- UNKNOWN COMMAND CHECK ---
       if (!this.registeredCommands.has(commandName)) {
         // Fuzzy Search Logic

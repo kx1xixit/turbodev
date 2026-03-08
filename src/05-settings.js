@@ -375,6 +375,17 @@ Object.assign(TurboDevExtension.prototype, {
       // If currently minimized, maximize it because minimized True TUI mode looks broken/hidden
       if (this.isMinimized) this._toggleMinimize();
 
+      // Force-close the settings panel (it's inaccessible in True TUI mode — use the settings command)
+      if (this.settingsPanel && this.settingsPanel.classList.contains('open')) {
+        this.settingsPanel.classList.remove('open');
+      }
+
+      // Switch to OS-style prompt, saving whatever the current prompt is for restoration
+      if (this.promptLabel) {
+        this.tuiSavedPrompt = this.promptLabel.textContent;
+        this.promptLabel.textContent = '$';
+      }
+
       // Start tracking loop - CANCEL FIRST to prevent duplication
       if (this.tuiReqId) cancelAnimationFrame(this.tuiReqId);
       // Immediately sync to canvas to avoid one-frame misalignment before the rAF loop runs
@@ -383,6 +394,13 @@ Object.assign(TurboDevExtension.prototype, {
       window.addEventListener('scroll', this.boundTuiScroll, { capture: true, passive: true });
     } else {
       this.container.classList.remove('ext_kxTurboDev-true-tui-mode');
+
+      // Restore the prompt that was active before entering True TUI mode
+      if (this.promptLabel) {
+        this.promptLabel.textContent = this.tuiSavedPrompt !== undefined
+          ? this.tuiSavedPrompt
+          : this.customPrompt;
+      }
 
       // Stop tracking loop
       if (this.tuiReqId) {
@@ -618,6 +636,7 @@ Object.assign(TurboDevExtension.prototype, {
 
   _toggleSettings() {
     if (this.isSettingsMenuLocked) return;
+    if (this.systemSettings.trueTuiMode) return;
     if (!this.settingsPanel) return;
     const isOpen = this.settingsPanel.classList.contains('open');
     if (!isOpen) {

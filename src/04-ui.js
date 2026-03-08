@@ -252,8 +252,11 @@ Object.assign(TurboDevExtension.prototype, {
   },
   _applySystemSettings() {
     this._setTheme(this.systemSettings.theme);
+    // CLI mode and True TUI mode are mutually exclusive; CLI takes precedence if both are somehow saved
     if (this.systemSettings.cliMode) {
       this._setCliMode(true);
+    } else if (this.systemSettings.trueTuiMode) {
+      this._setTrueTuiMode(true);
     } else {
       if (this.container) this.container.style.opacity = this.systemSettings.opacity;
     }
