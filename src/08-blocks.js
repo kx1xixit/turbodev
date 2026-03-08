@@ -316,6 +316,13 @@ Object.assign(TurboDevExtension.prototype, {
     return '';
   },
 
+  setTerminalName(args) {
+    const name = String(args.NAME);
+    this.systemSettings.displayName = name;
+    if (this.titleEl) this.titleEl.textContent = name;
+    this._saveSettings();
+  },
+
   showTerminal() {
     if (!this.container) this._createUI();
     this.container.style.display = 'flex';

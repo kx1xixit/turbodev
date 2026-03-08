@@ -18,6 +18,7 @@ export default [
         INDENT_STEP_PX: 'readonly',
         INDENT_STEP_TEXT: 'readonly',
         pxToIndent: 'readonly',
+        THEMES: 'readonly',
       },
     },
     rules: {

@@ -62,7 +62,7 @@ Object.assign(TurboDevExtension.prototype, {
     const themeSelect = document.createElement('select');
     themeSelect.className = 'ext_kxTurboDev-setting-select';
 
-    ['standard', 'matrix', 'ocean', 'retro'].forEach(t => {
+    THEMES.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t;
       opt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
@@ -75,10 +75,16 @@ Object.assign(TurboDevExtension.prototype, {
     themeSelect.onchange = e => {
       this._setTheme(e.target.value);
       this._saveSettings();
+      this._refreshSettingsUI();
     };
     themeRow.appendChild(themeLabel);
     themeRow.appendChild(themeSelect);
     content.appendChild(themeRow);
+
+    // Theme Builder — only visible when 'custom' theme is selected
+    if (this.systemSettings.theme === 'custom') {
+      this._buildThemeBuilderSection(content, this.lockedSettings.has('theme'));
+    }
 
     // CLI Mode Toggle
     this._addToggle(content, 'CLI Mode', 'cliMode', this.systemSettings.cliMode, val => {
@@ -214,12 +220,147 @@ Object.assign(TurboDevExtension.prototype, {
     this.container.classList.remove(
       'ext_kxTurboDev-theme-matrix',
       'ext_kxTurboDev-theme-ocean',
-      'ext_kxTurboDev-theme-retro'
+      'ext_kxTurboDev-theme-retro',
+      'ext_kxTurboDev-theme-nord',
+      'ext_kxTurboDev-theme-solarized',
+      'ext_kxTurboDev-theme-monokai',
+      'ext_kxTurboDev-theme-light'
     );
-    if (themeName !== 'standard') {
+    this._clearCustomTheme();
+    if (themeName === 'custom') {
+      this._applyCustomTheme();
+    } else if (themeName !== 'standard') {
       this.container.classList.add(`ext_kxTurboDev-theme-${themeName}`);
     }
     this.systemSettings.theme = themeName;
+  },
+
+  _clearCustomTheme() {
+    if (!this.container) return;
+    this.container.style.removeProperty('--ext_kxTurboDev-term-bg');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-text');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-accent');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-border');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-header');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-input-bg');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-font');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-switch-track');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-switch-knob');
+  },
+
+  _applyCustomTheme() {
+    if (!this.container) return;
+    const ct = this.systemSettings.customTheme;
+    if (!ct) return;
+    this.container.style.setProperty('--ext_kxTurboDev-term-bg', ct.bg);
+    this.container.style.setProperty('--ext_kxTurboDev-term-text', ct.text);
+    this.container.style.setProperty('--ext_kxTurboDev-term-accent', ct.accent);
+    this.container.style.setProperty('--ext_kxTurboDev-term-border', ct.border);
+    this.container.style.setProperty('--ext_kxTurboDev-term-header', ct.header);
+    this.container.style.setProperty('--ext_kxTurboDev-term-input-bg', ct.inputBg);
+    this.container.style.setProperty('--ext_kxTurboDev-term-font', ct.font);
+    this.container.style.setProperty('--ext_kxTurboDev-term-switch-track', ct.border);
+    this.container.style.setProperty('--ext_kxTurboDev-term-switch-knob', this._getContrastColor(ct.border));
+  },
+
+  _buildThemeBuilderSection(content, locked = false) {
+    const secBuilder = document.createElement('div');
+    secBuilder.className = 'ext_kxTurboDev-settings-section-title';
+    secBuilder.textContent = 'Theme Builder';
+    secBuilder.style.marginTop = '10px';
+    content.appendChild(secBuilder);
+
+    const ct = this.systemSettings.customTheme;
+    const colorFields = [
+      { key: 'bg', label: 'Background' },
+      { key: 'text', label: 'Text' },
+      { key: 'accent', label: 'Accent' },
+      { key: 'border', label: 'Border' },
+      { key: 'header', label: 'Header' },
+      { key: 'inputBg', label: 'Input BG' },
+    ];
+
+    colorFields.forEach(({ key, label }) => {
+      const row = document.createElement('div');
+      row.className = 'ext_kxTurboDev-setting-item';
+
+      const lbl = document.createElement('label');
+      lbl.textContent = label;
+
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.className = 'ext_kxTurboDev-setting-color';
+      // Normalize stored value to hex for the color picker
+      input.value = this._toHexColor(ct[key] || '#000000');
+      if (locked) input.disabled = true;
+
+      input.oninput = e => {
+        ct[key] = e.target.value;
+        this._applyCustomTheme();
+        clearTimeout(this._saveSettingsTimer);
+        this._saveSettingsTimer = setTimeout(() => this._saveSettings(), 300);
+      };
+
+      row.appendChild(lbl);
+      row.appendChild(input);
+      content.appendChild(row);
+    });
+
+    // Font input (text field)
+    const fontRow = document.createElement('div');
+    fontRow.className = 'ext_kxTurboDev-setting-item';
+    const fontLabel = document.createElement('label');
+    fontLabel.textContent = 'Font';
+    const fontInput = document.createElement('input');
+    fontInput.type = 'text';
+    fontInput.className = 'ext_kxTurboDev-setting-input';
+    fontInput.value = ct.font;
+    if (locked) fontInput.disabled = true;
+    fontInput.oninput = e => {
+      ct.font = e.target.value;
+      this._applyCustomTheme();
+      clearTimeout(this._saveSettingsTimer);
+      this._saveSettingsTimer = setTimeout(() => this._saveSettings(), 300);
+    };
+    fontRow.appendChild(fontLabel);
+    fontRow.appendChild(fontInput);
+    content.appendChild(fontRow);
+  },
+
+  _toHexColor(value) {
+    if (!value) return '#000000';
+    const s = String(value).trim();
+    // Already a 6-digit hex
+    if (/^#[0-9a-fA-F]{6}$/.test(s)) return s;
+    // 3-digit hex — expand each digit to two
+    if (/^#[0-9a-fA-F]{3}$/.test(s)) {
+      return '#' + [...s.slice(1)].map(c => c + c).join('');
+    }
+    // rgba/rgb — extract r, g, b, clamp to [0,255], and convert to hex
+    const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (m) {
+      return (
+        '#' +
+        [m[1], m[2], m[3]]
+          .map(component => {
+            let v = parseInt(component, 10);
+            if (Number.isNaN(v)) v = 0;
+            v = Math.max(0, Math.min(255, v));
+            return v.toString(16).padStart(2, '0');
+          })
+          .join('')
+      );
+    }
+    return '#000000';
+  },
+
+  _getContrastColor(hex) {
+    const normalized = this._toHexColor(hex);
+    const h = normalized.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#222222' : '#ffffff';
   },
 
   _getOutputText() {
