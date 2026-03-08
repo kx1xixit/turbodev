@@ -148,11 +148,11 @@ export const STYLES = `
           display: none !important;
       }
 
-      /* Style input area as an inline terminal line in True TUI mode */
+      /* Style input area as a seamless inline terminal line in True TUI mode */
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-terminal-input-area {
           background: transparent !important;
-          border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-          padding: 6px 16px !important;
+          border-top: none !important;
+          padding: 4px 16px !important;
       }
   
       /* Resize handle corner hint */

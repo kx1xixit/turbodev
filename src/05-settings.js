@@ -380,12 +380,6 @@ Object.assign(TurboDevExtension.prototype, {
         this.settingsPanel.classList.remove('open');
       }
 
-      // Switch to OS-style prompt, saving whatever the current prompt is for restoration
-      if (this.promptLabel) {
-        this.tuiSavedPrompt = this.promptLabel.textContent;
-        this.promptLabel.textContent = '$';
-      }
-
       // Start tracking loop - CANCEL FIRST to prevent duplication
       if (this.tuiReqId) cancelAnimationFrame(this.tuiReqId);
       // Immediately sync to canvas to avoid one-frame misalignment before the rAF loop runs
@@ -395,11 +389,14 @@ Object.assign(TurboDevExtension.prototype, {
     } else {
       this.container.classList.remove('ext_kxTurboDev-true-tui-mode');
 
-      // Restore the prompt that was active before entering True TUI mode
-      if (this.promptLabel) {
-        this.promptLabel.textContent = this.tuiSavedPrompt !== undefined
-          ? this.tuiSavedPrompt
-          : this.customPrompt;
+      // Restore the input area visibility. If the command bar is disabled, apply the
+      // standard non-TUI disabled styling (blur overlay) now that we're back in normal mode.
+      if (this.inputField) {
+        this.inputField.parentElement.style.display = '';
+        if (!this.commandBarEnabled && !this.pendingQuery) {
+          this.inputField.parentElement.classList.add('ext_kxTurboDev-input-disabled');
+          this.inputField.disabled = true;
+        }
       }
 
       // Stop tracking loop
@@ -434,10 +431,19 @@ Object.assign(TurboDevExtension.prototype, {
       if (enabled) {
         this.inputField.parentElement.classList.remove('ext_kxTurboDev-input-disabled');
         this.inputField.disabled = false;
+        // In True TUI mode, restore the input area if it was hidden
+        if (this.systemSettings.trueTuiMode) {
+          this.inputField.parentElement.style.display = '';
+        }
       } else if (!this.pendingQuery) {
         // Defer the visual disable if a query is in-flight to avoid orphaning its promise
-        this.inputField.parentElement.classList.add('ext_kxTurboDev-input-disabled');
-        this.inputField.disabled = true;
+        if (this.systemSettings.trueTuiMode) {
+          // In True TUI mode, hide the line entirely so TUI backgrounds show through
+          this.inputField.parentElement.style.display = 'none';
+        } else {
+          this.inputField.parentElement.classList.add('ext_kxTurboDev-input-disabled');
+          this.inputField.disabled = true;
+        }
       }
     }
   },
