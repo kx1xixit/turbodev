@@ -162,6 +162,40 @@ export const STYLES = `
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode .ext_kxTurboDev-control-btn.clear {
           display: none;
       }
+
+      /* True TUI Mode: Covers Scratch canvas, hides TurboDev chrome (Positioning handled by JS) */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode {
+          border-radius: 0 !important;
+          border: none !important;
+          background: #050505 !important; /* Solid Black */
+          opacity: 1 !important;
+          backdrop-filter: none !important;
+          resize: none !important;
+          box-shadow: none !important;
+          z-index: 500 !important; /* Ensure it stays below TurboWarp modals */
+      }
+
+      /* Hide title bar entirely in True TUI mode */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-terminal-header {
+          display: none !important;
+      }
+
+      /* Hide settings panel in True TUI mode (use the settings command instead) */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-settings-panel {
+          display: none !important;
+      }
+
+      /* Hide scroll-to-bottom button in True TUI mode so the canvas stays text-only */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-scroll-btn {
+          display: none !important;
+      }
+
+      /* Style input area as a seamless inline terminal line in True TUI mode */
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode .ext_kxTurboDev-terminal-input-area {
+          background: transparent !important;
+          border-top: none !important;
+          padding: 4px 16px !important;
+      }
   
       /* Resize handle corner hint */
       .ext_kxTurboDev-terminal-wrapper::after {
@@ -177,6 +211,7 @@ export const STYLES = `
           opacity: 0.3;
       }
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-cli-mode::after,
+      .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-true-tui-mode::after,
       .ext_kxTurboDev-terminal-wrapper.ext_kxTurboDev-minimized::after { display: none; }
   
       .ext_kxTurboDev-terminal-header {
