@@ -76,6 +76,9 @@ export class TurboDevExtension {
     this.lockedSettings = new Set();
     this.isSettingsMenuLocked = false;
 
+    // Debounce timer for settings saves from theme builder inputs
+    this._saveSettingsTimer = null;
+
     // Command Registry: Key = Name, Value = { desc: string, args: [] }
     this.registeredCommands = new Map();
     // Pre-populate built-ins (args array matches format: { name, type, optional })
@@ -239,9 +242,15 @@ export class TurboDevExtension {
       const stored = localStorage.getItem('ext_kxTurboDev_settings');
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Shallow-merge customTheme so all fields have values from either stored data or constructor defaults
-        const customTheme = { ...this.systemSettings.customTheme, ...(parsed.customTheme || {}) };
-        this.systemSettings = { ...this.systemSettings, ...parsed, customTheme };
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          // Shallow-merge customTheme so all fields have values from either stored data or constructor defaults
+          const parsedTheme =
+            parsed.customTheme && typeof parsed.customTheme === 'object' && !Array.isArray(parsed.customTheme)
+              ? parsed.customTheme
+              : {};
+          const customTheme = { ...this.systemSettings.customTheme, ...parsedTheme };
+          this.systemSettings = { ...this.systemSettings, ...parsed, customTheme };
+        }
       }
     } catch (e) {
       console.warn('TurboDev: Failed to load settings', e);

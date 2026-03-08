@@ -370,6 +370,9 @@ Object.assign(TurboDevExtension.prototype, {
         if (THEMES.includes(newTheme)) {
           this._setTheme(newTheme);
           this._saveSettings(); // Persist theme change
+          if (this.settingsPanel && this.settingsPanel.classList.contains('open')) {
+            this._refreshSettingsUI();
+          }
           this._addLine(`@c #2ecc71:Theme set to ${newTheme}@c`);
         } else {
           this._addLine(`@c #e74c3c:Unknown theme. Available: ${THEMES.join(', ')}@c`);

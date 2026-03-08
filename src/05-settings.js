@@ -83,7 +83,7 @@ Object.assign(TurboDevExtension.prototype, {
 
     // Theme Builder — only visible when 'custom' theme is selected
     if (this.systemSettings.theme === 'custom') {
-      this._buildThemeBuilderSection(content);
+      this._buildThemeBuilderSection(content, this.lockedSettings.has('theme'));
     }
 
     // CLI Mode Toggle
@@ -245,6 +245,7 @@ Object.assign(TurboDevExtension.prototype, {
     this.container.style.removeProperty('--ext_kxTurboDev-term-input-bg');
     this.container.style.removeProperty('--ext_kxTurboDev-term-font');
     this.container.style.removeProperty('--ext_kxTurboDev-term-switch-track');
+    this.container.style.removeProperty('--ext_kxTurboDev-term-switch-knob');
   },
 
   _applyCustomTheme() {
@@ -259,9 +260,10 @@ Object.assign(TurboDevExtension.prototype, {
     this.container.style.setProperty('--ext_kxTurboDev-term-input-bg', ct.inputBg);
     this.container.style.setProperty('--ext_kxTurboDev-term-font', ct.font);
     this.container.style.setProperty('--ext_kxTurboDev-term-switch-track', ct.border);
+    this.container.style.setProperty('--ext_kxTurboDev-term-switch-knob', this._getContrastColor(ct.border));
   },
 
-  _buildThemeBuilderSection(content) {
+  _buildThemeBuilderSection(content, locked = false) {
     const secBuilder = document.createElement('div');
     secBuilder.className = 'ext_kxTurboDev-settings-section-title';
     secBuilder.textContent = 'Theme Builder';
@@ -290,11 +292,13 @@ Object.assign(TurboDevExtension.prototype, {
       input.className = 'ext_kxTurboDev-setting-color';
       // Normalize stored value to hex for the color picker
       input.value = this._toHexColor(ct[key] || '#000000');
+      if (locked) input.disabled = true;
 
       input.oninput = e => {
         ct[key] = e.target.value;
         this._applyCustomTheme();
-        this._saveSettings();
+        clearTimeout(this._saveSettingsTimer);
+        this._saveSettingsTimer = setTimeout(() => this._saveSettings(), 300);
       };
 
       row.appendChild(lbl);
@@ -311,10 +315,12 @@ Object.assign(TurboDevExtension.prototype, {
     fontInput.type = 'text';
     fontInput.className = 'ext_kxTurboDev-setting-input';
     fontInput.value = ct.font;
+    if (locked) fontInput.disabled = true;
     fontInput.oninput = e => {
       ct.font = e.target.value;
       this._applyCustomTheme();
-      this._saveSettings();
+      clearTimeout(this._saveSettingsTimer);
+      this._saveSettingsTimer = setTimeout(() => this._saveSettings(), 300);
     };
     fontRow.appendChild(fontLabel);
     fontRow.appendChild(fontInput);
@@ -346,6 +352,15 @@ Object.assign(TurboDevExtension.prototype, {
       );
     }
     return '#000000';
+  },
+
+  _getContrastColor(hex) {
+    const normalized = this._toHexColor(hex);
+    const h = normalized.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#222222' : '#ffffff';
   },
 
   _getOutputText() {
